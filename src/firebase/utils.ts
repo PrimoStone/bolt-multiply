@@ -1,5 +1,6 @@
 import { db } from './config';
-import { collection, query, where, getDocs, addDoc, getDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, getDoc, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface User {
   id: string;
@@ -8,30 +9,62 @@ interface User {
   lastName: string;
 }
 
+const storage = getStorage();
+
+export const uploadUserPhoto = async (userId: string, file: File): Promise<string> => {
+  try {
+    const storageRef = ref(storage, `userPhotos/${userId}`);
+    await uploadBytes(storageRef, file);
+    const photoURL = await getDownloadURL(storageRef);
+    return photoURL;
+  } catch (error) {
+    console.error('Błąd podczas przesyłania zdjęcia:', error);
+    throw error;
+  }
+};
+
+// Funkcja do konwersji File na Base64
+export const convertToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      // Dodajemy sprawdzenie rozmiaru
+      const base64String = reader.result as string;
+      if (base64String.length > 800000) { // ~800KB limit
+        reject(new Error('Zdjęcie jest za duże. Maksymalny rozmiar to 800KB'));
+        return;
+      }
+      resolve(base64String);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 export const registerUser = async (
   username: string, 
   password: string, 
   firstName: string, 
-  lastName: string
+  lastName: string,
+  photoFile?: File
 ) => {
   try {
-    // Sprawdź czy użytkownik już istnieje
-    const userQuery = query(
-      collection(db, 'users'), 
-      where('username', '==', username)
-    );
-    const existingUser = await getDocs(userQuery);
+    let photoBase64 = '';
     
-    if (!existingUser.empty) {
-      throw new Error('Ta nazwa użytkownika jest już zajęta');
+    if (photoFile) {
+      try {
+        photoBase64 = await convertToBase64(photoFile);
+      } catch (error) {
+        throw new Error('Problem ze zdjęciem: ' + error.message);
+      }
     }
 
-    // Utwórz nowego użytkownika
     const userRef = await addDoc(collection(db, 'users'), {
       username,
-      password, // W prawdziwej aplikacji należy zahashować hasło!
+      password,
       firstName,
       lastName,
+      photoURL: photoBase64, // zapisujemy Base64 string
       createdAt: new Date()
     });
 
@@ -39,7 +72,8 @@ export const registerUser = async (
       id: userRef.id,
       username,
       firstName,
-      lastName
+      lastName,
+      photoURL: photoBase64
     };
   } catch (error) {
     console.error('Błąd podczas rejestracji:', error);
@@ -123,11 +157,16 @@ export const saveGameStats = async (
   isPerfectScore: boolean
 ) => {
   try {
+    // Pobierz dane użytkownika, aby uzyskać photoURL
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    const userData = userDoc.data();
+    
     await addDoc(collection(db, 'stats'), {
       userId,
       username,
       firstName,
       lastName,
+      photoURL: userData?.photoURL || '', // Dodaj photoURL ze danych użytkownika
       score,
       timeSpent,
       isPerfectScore,
@@ -139,13 +178,34 @@ export const saveGameStats = async (
   }
 };
 
+interface LeaderboardEntry {
+  id: string;
+  userId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  photoURL: string;
+  score: number;
+  timeSpent: number;
+  timestamp: Date;
+}
+
 export const getLeaderboard = async () => {
   try {
     // Pobierz wszystkie statystyki
     const statsRef = collection(db, 'stats');
     const statsSnapshot = await getDocs(statsRef);
     
-    // Przygotuj mapy do agregacji danych
+    // Pobierz wszystkich użytkowników (żeby mieć dostęp do ich zdjęć)
+    const usersRef = collection(db, 'users');
+    const usersSnapshot = await getDocs(usersRef);
+    
+    // Utwórz mapę użytkowników dla szybkiego dostępu
+    const usersMap = new Map();
+    usersSnapshot.docs.forEach(doc => {
+      usersMap.set(doc.id, doc.data());
+    });
+
     const bestScores = new Map();
     const timeSpentMap = new Map();
     const fastestPerfectGames = new Map();
@@ -153,6 +213,7 @@ export const getLeaderboard = async () => {
     statsSnapshot.docs.forEach(doc => {
       const data = doc.data();
       const userId = data.userId;
+      const userData = usersMap.get(userId) || {};
 
       // Aktualizuj najlepszy wynik użytkownika
       if (!bestScores.has(userId) || bestScores.get(userId).score < data.score) {
@@ -162,6 +223,7 @@ export const getLeaderboard = async () => {
           username: data.username,
           firstName: data.firstName,
           lastName: data.lastName,
+          photoURL: userData.photoURL || '', // Użyj zdjęcia z danych użytkownika
           score: data.score,
           timestamp: data.timestamp
         });
@@ -175,14 +237,15 @@ export const getLeaderboard = async () => {
           username: data.username,
           firstName: data.firstName,
           lastName: data.lastName,
+          photoURL: userData.photoURL || '', // Użyj zdjęcia z danych użytkownika
           timeSpent: 0,
           timestamp: data.timestamp
         });
       }
       timeSpentMap.get(userId).timeSpent += data.timeSpent;
 
-      // Śledź najszybsze perfekcyjne gry (tylko gdy wszystkie odpowiedzi są poprawne)
-      if (data.isPerfectScore) {
+      // Dodaj logikę dla najszybszych perfekcyjnych gier
+      if (data.score === 20) { // Zakładając, że 20 to maksymalny wynik
         if (!fastestPerfectGames.has(userId) || 
             fastestPerfectGames.get(userId).timeSpent > data.timeSpent) {
           fastestPerfectGames.set(userId, {
@@ -191,6 +254,7 @@ export const getLeaderboard = async () => {
             username: data.username,
             firstName: data.firstName,
             lastName: data.lastName,
+            photoURL: userData.photoURL || '',
             timeSpent: data.timeSpent,
             timestamp: data.timestamp
           });

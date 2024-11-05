@@ -11,6 +11,7 @@ interface LeaderboardStats {
   score: number;
   timeSpent: number;
   timestamp: Date;
+  photoURL?: string;
 }
 
 const Leaderboard: React.FC = () => {
@@ -64,8 +65,21 @@ const Leaderboard: React.FC = () => {
               key={stat.id}
               className="flex justify-between items-center p-3 bg-gray-50 rounded"
             >
-              <div className="flex items-center space-x-2">
-                <span className="font-bold">{index + 1}.</span>
+              <div className="flex items-center space-x-3">
+                <span className="font-bold w-6">{index + 1}.</span>
+                {stat.photoURL ? (
+                  <img
+                    src={stat.photoURL}
+                    alt={`${stat.firstName} ${stat.lastName}`}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500 text-sm">
+                      {stat.firstName?.[0]}{stat.lastName?.[0]}
+                    </span>
+                  </div>
+                )}
                 <span>{stat.firstName} {stat.lastName}</span>
               </div>
               <span className="font-bold">{stat.score} pkt</span>
@@ -83,13 +97,24 @@ const Leaderboard: React.FC = () => {
               key={stat.id}
               className="flex justify-between items-center p-3 bg-gray-50 rounded"
             >
-              <div className="flex items-center space-x-2">
-                <span className="font-bold">{index + 1}.</span>
+              <div className="flex items-center space-x-3">
+                <span className="font-bold w-6">{index + 1}.</span>
+                {stat.photoURL ? (
+                  <img
+                    src={stat.photoURL}
+                    alt={`${stat.firstName} ${stat.lastName}`}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-500 text-sm">
+                      {stat.firstName?.[0]}{stat.lastName?.[0]}
+                    </span>
+                  </div>
+                )}
                 <span>{stat.firstName} {stat.lastName}</span>
               </div>
-              <span className="font-bold">
-                {Math.round(stat.timeSpent / 60)} min
-              </span>
+              <span className="font-bold">{Math.round(stat.timeSpent / 60)} min</span>
             </div>
           ))}
         </div>

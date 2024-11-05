@@ -5,66 +5,75 @@ import { jsPDF } from 'jspdf';
 import { ArrowLeft, Download } from 'lucide-react';
 
 const Proof: React.FC = () => {
-  const { user } = useContext(UserContext);
   const location = useLocation();
+  const { user } = useContext(UserContext);
   const navigate = useNavigate();
   const { score, totalQuestions, startTime, endTime, gameHistory } = location.state;
 
-  const generateProofOfPractice = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Multiplication Game - Proof of Practice', 10, 20);
-    doc.setFontSize(12);
-    doc.text(`Student: ${user?.firstName} ${user?.lastName}`, 10, 30);
-    doc.text(`School: ${user?.school}`, 10, 40);
-    doc.text(`Date: ${startTime.toLocaleDateString()}`, 10, 50);
-    doc.text(`Time: ${startTime.toLocaleTimeString()} - ${endTime.toLocaleTimeString()}`, 10, 60);
-    doc.text(`Duration: ${Math.round((endTime - startTime) / 1000)} seconds`, 10, 70);
-    doc.text(`Score: ${score}/${totalQuestions}`, 10, 80);
-    doc.text('Practice History:', 10, 90);
-    gameHistory.forEach((item, index) => {
-      doc.text(item, 20, 100 + index * 10);
-    });
-    if (user?.profilePicture) {
-      doc.addImage(user.profilePicture, 'JPEG', 150, 20, 40, 40);
-    }
-    doc.save('multiplication_game_proof.pdf');
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-center">Game Results</h1>
-      <div className="space-y-2">
-        <p><strong>Player:</strong> {user?.firstName} {user?.lastName}</p>
-        <p><strong>School:</strong> {user?.school}</p>
-        <p><strong>Date:</strong> {startTime.toLocaleDateString()}</p>
-        <p><strong>Time:</strong> {startTime.toLocaleTimeString()} - {endTime.toLocaleTimeString()}</p>
-        <p><strong>Duration:</strong> {Math.round((endTime - startTime) / 1000)} seconds</p>
-        <p><strong>Score:</strong> {score}/{totalQuestions}</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          {user?.photoURL && (
+            <img
+              src={user.photoURL}
+              alt={`${user.firstName} ${user.lastName}`}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          )}
+          <div>
+            <h2 className="text-xl font-bold">{user?.firstName} {user?.lastName}</h2>
+            <p className="text-gray-600">
+              {new Date(startTime).toLocaleDateString()} {new Date(startTime).toLocaleTimeString()}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold">{score}/{totalQuestions}</p>
+          <p className="text-gray-600">
+            Czas: {Math.floor((endTime - startTime) / 1000)} sekund
+          </p>
+        </div>
       </div>
-      {user?.profilePicture && (
-        <img src={user.profilePicture} alt="Profile" className="w-32 h-32 mx-auto rounded-full" />
-      )}
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold">Practice History:</h2>
-        {gameHistory.map((item, index) => (
-          <p key={index}>{item}</p>
-        ))}
+
+      <div className="bg-white rounded-lg p-4 shadow">
+        <h3 className="text-lg font-semibold mb-2">Historia odpowiedzi:</h3>
+        <div className="space-y-1">
+          {gameHistory.map((result, index) => (
+            <div 
+              key={index}
+              className={`p-1 text-sm rounded ${
+                result.includes('Correct') ? 'bg-green-100' : 'bg-red-100'
+              }`}
+            >
+              {result}
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="flex justify-between">
+
+      <div className="flex space-x-4">
         <button
           onClick={() => navigate('/game')}
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 flex items-center"
+          className="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 print:hidden"
         >
-          <ArrowLeft className="mr-2" size={20} />
-          New Game
+          Zagraj ponownie
         </button>
         <button
-          onClick={generateProofOfPractice}
-          className="bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 flex items-center"
+          onClick={() => navigate('/leaderboard')}
+          className="flex-1 bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300 print:hidden"
         >
-          <Download className="mr-2" size={20} />
-          Download Proof
+          Zobacz ranking
+        </button>
+        <button
+          onClick={handlePrint}
+          className="flex-1 bg-purple-500 text-white p-2 rounded hover:bg-purple-600 transition duration-300 print:hidden"
+        >
+          Wydrukuj
         </button>
       </div>
     </div>
