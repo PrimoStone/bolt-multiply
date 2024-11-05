@@ -1,95 +1,120 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trophy, Clock } from 'lucide-react';
-import { getAllGameStats, getAllUsers } from '../services/db';
+import { getLeaderboard } from '../firebase/utils';
+import { ArrowLeft } from 'lucide-react';
 
-interface LeaderboardEntry {
-  userId: number;
+interface LeaderboardStats {
+  id: string;
   username: string;
-  totalScore: number;
-  gamesPlayed: number;
-  totalTime: number;
+  firstName: string;
+  lastName: string;
+  score: number;
+  timeSpent: number;
+  timestamp: Date;
 }
 
 const Leaderboard: React.FC = () => {
   const navigate = useNavigate();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [sortBy, setSortBy] = useState<'score' | 'time'>('score');
+  const [bestScores, setBestScores] = useState<LeaderboardStats[]>([]);
+  const [mostPracticed, setMostPracticed] = useState<LeaderboardStats[]>([]);
+  const [fastestGames, setFastestGames] = useState<LeaderboardStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchLeaderboardData = async () => {
-      const allStats = await getAllGameStats();
-      const allUsers = await getAllUsers();
-
-      const leaderboardData = allUsers.map(user => {
-        const userStats = allStats.filter(stat => stat.userId === user.id);
-        return {
-          userId: user.id,
-          username: user.username,
-          totalScore: userStats.reduce((sum, stat) => sum + stat.score, 0),
-          gamesPlayed: userStats.length,
-          totalTime: userStats.reduce((sum, stat) => sum + stat.duration, 0),
-        };
-      });
-
-      setLeaderboard(leaderboardData);
+    const fetchLeaderboard = async () => {
+      try {
+        const data = await getLeaderboard();
+        setBestScores(data.bestScores as LeaderboardStats[]);
+        setMostPracticed(data.mostPracticed as LeaderboardStats[]);
+        setFastestGames(data.fastestGames as LeaderboardStats[]);
+      } catch (error) {
+        setError('Nie udało się pobrać statystyk');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchLeaderboardData();
+    fetchLeaderboard();
   }, []);
 
-  const sortedLeaderboard = [...leaderboard].sort((a, b) => {
-    if (sortBy === 'score') {
-      return b.totalScore - a.totalScore;
-    } else {
-      return b.totalTime - a.totalTime;
-    }
-  });
+  if (loading) return <div className="text-center">Ładowanie...</div>;
+  if (error) return <div className="text-red-500 text-center">{error}</div>;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-center">Leaderboard</h1>
-      <div className="flex justify-center space-x-4">
+    <div className="space-y-8">
+      <div className="flex justify-between items-center mb-6">
         <button
-          onClick={() => setSortBy('score')}
-          className={`p-2 rounded ${sortBy === 'score' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          onClick={() => navigate('/game')}
+          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 flex items-center"
         >
-          <Trophy className="inline-block mr-2" size={20} />
-          Best Scores
+          <ArrowLeft className="mr-2" size={20} />
+          Powrót do gry
         </button>
-        <button
-          onClick={() => setSortBy('time')}
-          className={`p-2 rounded ${sortBy === 'time' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-        >
-          <Clock className="inline-block mr-2" size={20} />
-          Most Time Practiced
-        </button>
+        <h1 className="text-2xl font-bold">Ranking</h1>
       </div>
-      <div className="space-y-4">
-        {sortedLeaderboard.map((entry, index) => (
-          <div key={entry.userId} className="bg-gray-100 p-4 rounded flex justify-between items-center">
-            <div>
-              <p className="font-semibold">{index + 1}. {entry.username}</p>
-              <p>Games Played: {entry.gamesPlayed}</p>
+      
+      {/* Najlepsze wyniki */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Najlepsze wyniki</h2>
+        <div className="space-y-2">
+          {bestScores.map((stat, index) => (
+            <div 
+              key={stat.id}
+              className="flex justify-between items-center p-3 bg-gray-50 rounded"
+            >
+              <div className="flex items-center space-x-2">
+                <span className="font-bold">{index + 1}.</span>
+                <span>{stat.firstName} {stat.lastName}</span>
+              </div>
+              <span className="font-bold">{stat.score} pkt</span>
             </div>
-            <div className="text-right">
-              <p className="font-semibold">
-                {sortBy === 'score' ? `Total Score: ${entry.totalScore}` : `Total Time: ${Math.round(entry.totalTime / 60000)} min`}
-              </p>
-              <p>
-                {sortBy === 'score' ? `Avg Score: ${(entry.totalScore / entry.gamesPlayed).toFixed(2)}` : `Avg Time: ${Math.round(entry.totalTime / entry.gamesPlayed / 1000)} sec`}
-              </p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-      <button
-        onClick={() => navigate('/game')}
-        className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 flex items-center justify-center"
-      >
-        <ArrowLeft className="mr-2" size={20} />
-        Back to Game
-      </button>
+
+      {/* Najwięcej czasu */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Najwięcej czasu spędzonego</h2>
+        <div className="space-y-2">
+          {mostPracticed.map((stat, index) => (
+            <div 
+              key={stat.id}
+              className="flex justify-between items-center p-3 bg-gray-50 rounded"
+            >
+              <div className="flex items-center space-x-2">
+                <span className="font-bold">{index + 1}.</span>
+                <span>{stat.firstName} {stat.lastName}</span>
+              </div>
+              <span className="font-bold">
+                {Math.round(stat.timeSpent / 60)} min
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Najszybsze perfekcyjne gry */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Najszybsze perfekcyjne gry</h2>
+        <div className="space-y-2">
+          {fastestGames.map((stat, index) => (
+            <div 
+              key={stat.id}
+              className="flex justify-between items-center p-3 bg-gray-50 rounded"
+            >
+              <div className="flex items-center space-x-2">
+                <span className="font-bold">{index + 1}.</span>
+                <span>{stat.firstName} {stat.lastName}</span>
+              </div>
+              <span className="font-bold">
+                {stat.timeSpent} sek
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

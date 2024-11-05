@@ -2,11 +2,15 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { Award, BarChart2, LogOut, Users } from 'lucide-react';
-import { addGameStats } from '../services/db';
+import { saveGameStats } from '../firebase/utils';
 
 const TOTAL_QUESTIONS = 20;
 
-const Game: React.FC = () => {
+interface GameProps {
+  // twoje istniejące props
+}
+
+const Game: React.FC<GameProps> = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
   const [num1, setNum1] = useState(0);
@@ -15,7 +19,7 @@ const Game: React.FC = () => {
   const [score, setScore] = useState(0);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [gameHistory, setGameHistory] = useState<string[]>([]);
-  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [startTime, setStartTime] = useState<Date>(new Date());
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -52,20 +56,27 @@ const Game: React.FC = () => {
       generateQuestion();
     } else {
       const endTime = new Date();
-      const duration = endTime.getTime() - (startTime?.getTime() || 0);
+      const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      const finalScore = score + (isCorrect ? 1 : 0);
       
-      // Save game stats
+      // Zapisz statystyki gry
       if (user) {
-        await addGameStats({
-          userId: user.id,
-          date: new Date(),
-          score: score + (isCorrect ? 1 : 0),
-          totalQuestions: TOTAL_QUESTIONS,
-          duration: duration,
-        });
+        try {
+          await saveGameStats(
+            user.id,
+            user.username,
+            user.firstName,
+            user.lastName,
+            finalScore,
+            timeSpent,
+            finalScore === TOTAL_QUESTIONS
+          );
+        } catch (error) {
+          console.error('Błąd podczas zapisywania statystyk:', error);
+        }
       }
 
-      // Navigate to proof page
+      // Przejdź do strony z wynikami
       navigate('/proof', { 
         state: { 
           score: score + (isCorrect ? 1 : 0), 
