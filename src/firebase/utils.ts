@@ -1,6 +1,7 @@
 import { db } from './config';
 import { collection, query, where, getDocs, addDoc, getDoc, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import imageCompression from 'browser-image-compression';
 
 interface User {
   id: string;
@@ -23,22 +24,41 @@ export const uploadUserPhoto = async (userId: string, file: File): Promise<strin
   }
 };
 
+export const compressImage = async (file: File): Promise<File> => {
+  const options = {
+    maxSizeMB: 0.1, // 100KB
+    maxWidthOrHeight: 200, // Maksymalny wymiar avatara
+    useWebWorker: true
+  };
+
+  try {
+    const compressedFile = await imageCompression(file, options);
+    return compressedFile;
+  } catch (error) {
+    console.error('Błąd podczas kompresji zdjęcia:', error);
+    throw error;
+  }
+};
+
 // Funkcja do konwersji File na Base64
-export const convertToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      // Dodajemy sprawdzenie rozmiaru
-      const base64String = reader.result as string;
-      if (base64String.length > 800000) { // ~800KB limit
-        reject(new Error('Zdjęcie jest za duże. Maksymalny rozmiar to 800KB'));
-        return;
-      }
-      resolve(base64String);
-    };
-    reader.onerror = error => reject(error);
-  });
+export const convertToBase64 = async (file: File): Promise<string> => {
+  try {
+    // Najpierw kompresuj
+    const compressedFile = await compressImage(file);
+    
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(compressedFile);
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        resolve(base64String);
+      };
+      reader.onerror = error => reject(error);
+    });
+  } catch (error) {
+    console.error('Błąd podczas konwersji zdjęcia:', error);
+    throw error;
+  }
 };
 
 export const registerUser = async (

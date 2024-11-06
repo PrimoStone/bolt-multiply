@@ -1,7 +1,7 @@
 import React, { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
-import { loginUser, registerUser } from '../firebase/utils';
+import { loginUser, registerUser, compressImage } from '../firebase/utils';
 
 const Login: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -22,25 +22,27 @@ const Login: React.FC = () => {
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Sprawdź rozmiar pliku (np. max 1MB)
-      if (file.size > 1024 * 1024) {
-        setPhotoError('Zdjęcie jest za duże. Maksymalny rozmiar to 1MB');
-        return;
+      try {
+        // Pokaż oryginalny rozmiar
+        const originalSize = (file.size / 1024 / 1024).toFixed(2);
+        console.log(`Oryginalny rozmiar: ${originalSize}MB`);
+
+        // Kompresuj i pokaż podgląd
+        const compressedFile = await compressImage(file);
+        const compressedSize = (compressedFile.size / 1024 / 1024).toFixed(2);
+        console.log(`Skompresowany rozmiar: ${compressedSize}MB`);
+
+        setPhotoFile(compressedFile);
+        setPhotoError('');
+
+        // Pokaż podgląd
+        const reader = new FileReader();
+        reader.onload = (e) => setPhotoPreview(e.target?.result as string);
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        setPhotoError('Błąd podczas przetwarzania zdjęcia');
+        console.error(error);
       }
-
-      // Sprawdź typ pliku
-      if (!file.type.startsWith('image/')) {
-        setPhotoError('Proszę wybrać plik obrazu');
-        return;
-      }
-
-      setPhotoFile(file);
-      setPhotoError('');
-
-      // Pokaż podgląd
-      const reader = new FileReader();
-      reader.onload = (e) => setPhotoPreview(e.target?.result as string);
-      reader.readAsDataURL(file);
     }
   };
 
@@ -115,7 +117,7 @@ const Login: React.FC = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Avatar (opcjonalnie, max 1MB)
+                Avatar (zostanie automatycznie zmniejszony)
               </label>
               <input
                 type="file"
@@ -133,6 +135,9 @@ const Login: React.FC = () => {
                     alt="Preview"
                     className="w-20 h-20 object-cover rounded-full mx-auto"
                   />
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    Zdjęcie zostanie automatycznie zoptymalizowane
+                  </p>
                 </div>
               )}
             </div>
