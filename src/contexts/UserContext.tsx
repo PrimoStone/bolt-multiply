@@ -1,17 +1,16 @@
 import React, { createContext, useState, ReactNode } from 'react';
 
-export interface User {
-  id: number;
+interface User {
+  id: string;
   username: string;
   firstName: string;
   lastName: string;
-  school: string;
-  profilePicture?: string;
+  photoURL?: string;
 }
 
 interface UserContextType {
   user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  setUser: (user: User | null) => void;
 }
 
 export const UserContext = createContext<UserContextType>({

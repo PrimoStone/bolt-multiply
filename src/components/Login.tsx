@@ -1,151 +1,160 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
-import { LogIn, UserPlus } from 'lucide-react';
-import { addUser, getUserByUsername } from '../services/db';
+import { loginUser, registerUser } from '../firebase/utils';
 
 const Login: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [school, setSchool] = useState('');
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>('');
+  const [photoError, setPhotoError] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const { setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLogin) {
-      // Login logic
-      const user = await getUserByUsername(username);
-      if (user && user.password === password) {
-        setUser({
-          id: user.id!,
-          username: user.username,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          school: user.school,
-          profilePicture: user.profilePicture,
-        });
-        navigate('/game');
-      } else {
-        alert('Invalid username or password');
-      }
-    } else {
-      // Registration logic
-      try {
-        const userId = await addUser({
-          username,
-          password,
-          firstName,
-          lastName,
-          school,
-          profilePicture: profilePicture || undefined,
-        });
-        setUser({
-          id: userId,
-          username,
-          firstName,
-          lastName,
-          school,
-          profilePicture: profilePicture || undefined,
-        });
-        navigate('/game');
-      } catch (error) {
-        alert('Username already exists');
-      }
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Sprawdź rozmiar pliku (np. max 1MB)
+      if (file.size > 1024 * 1024) {
+        setPhotoError('Zdjęcie jest za duże. Maksymalny rozmiar to 1MB');
+        return;
+      }
+
+      // Sprawdź typ pliku
+      if (!file.type.startsWith('image/')) {
+        setPhotoError('Proszę wybrać plik obrazu');
+        return;
+      }
+
+      setPhotoFile(file);
+      setPhotoError('');
+
+      // Pokaż podgląd
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicture(reader.result as string);
-      };
+      reader.onload = (e) => setPhotoPreview(e.target?.result as string);
       reader.readAsDataURL(file);
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      let userData;
+      if (isRegistering) {
+        userData = await registerUser(username, password, firstName, lastName, photoFile || undefined);
+      } else {
+        userData = await loginUser(username, password);
+      }
+      setUser(userData);
+      navigate('/game');
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="text-center">
-      <h1 className="text-3xl font-bold mb-6">Multiplication Game</h1>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-center">Gra Matematyczna</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="w-full p-2 border rounded"
-          required
-        />
-        {!isLogin && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Nazwa użytkownika</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Hasło</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+          />
+        </div>
+        
+        {isRegistering && (
           <>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="First Name"
-              className="w-full p-2 border rounded"
-              required
-            />
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Last Name"
-              className="w-full p-2 border rounded"
-              required
-            />
-            <input
-              type="text"
-              value={school}
-              onChange={(e) => setSchool(e.target.value)}
-              placeholder="School"
-              className="w-full p-2 border rounded"
-              required
-            />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="w-full p-2 border rounded"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Imię</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Avatar (opcjonalnie, max 1MB)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="w-full p-2 border rounded"
+              />
+              {photoError && (
+                <p className="text-red-500 text-sm mt-1">{photoError}</p>
+              )}
+              {photoPreview && (
+                <div className="mt-2">
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    className="w-20 h-20 object-cover rounded-full mx-auto"
+                  />
+                </div>
+              )}
+            </div>
           </>
         )}
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 flex items-center justify-center"
+          disabled={loading}
+          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 disabled:bg-blue-300"
         >
-          {isLogin ? (
-            <>
-              <LogIn className="mr-2" size={20} />
-              Login
-            </>
-          ) : (
-            <>
-              <UserPlus className="mr-2" size={20} />
-              Register
-            </>
-          )}
+          {loading ? 'Przetwarzanie...' : (isRegistering ? 'Zarejestruj się' : 'Zaloguj się')}
         </button>
       </form>
+
       <button
-        onClick={() => setIsLogin(!isLogin)}
-        className="mt-4 text-blue-500 hover:underline"
+        onClick={() => setIsRegistering(!isRegistering)}
+        className="w-full text-blue-500 hover:text-blue-600"
       >
-        {isLogin ? 'Need an account? Register' : 'Already have an account? Login'}
+        {isRegistering ? 'Masz już konto? Zaloguj się' : 'Nie masz konta? Zarejestruj się'}
       </button>
     </div>
   );

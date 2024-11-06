@@ -6,6 +6,7 @@ import Progress from './components/Progress';
 import Proof from './components/Proof';
 import Leaderboard from './components/Leaderboard';
 import { UserProvider } from './contexts/UserContext';
+import { db, auth } from './firebase/config';
 
 function App() {
   return (

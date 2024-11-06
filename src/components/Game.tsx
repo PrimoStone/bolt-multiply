@@ -98,7 +98,18 @@ const Game: React.FC<GameProps> = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-center">Multiplication Game</h1>
       <div className="flex justify-between items-center">
-        <p className="font-semibold">Player: {user?.firstName} {user?.lastName}</p>
+        <div className="flex items-center space-x-3">
+          {user?.photoURL && (
+            <img
+              src={user.photoURL}
+              alt={`${user.firstName} ${user.lastName}`}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          )}
+          <p className="font-semibold">
+            {user?.firstName} {user?.lastName}
+          </p>
+        </div>
         <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
