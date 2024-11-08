@@ -21,6 +21,9 @@ const Game: React.FC<GameProps> = () => {
   const [gameHistory, setGameHistory] = useState<string[]>([]);
   const [startTime, setStartTime] = useState<Date>(new Date());
   const inputRef = useRef<HTMLInputElement>(null);
+  const [time, setTime] = useState(0);
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -34,6 +37,20 @@ const Game: React.FC<GameProps> = () => {
   useEffect(() => {
     inputRef.current?.focus();
   }, [num1, num2]);
+
+  useEffect(() => {
+    if (isGameStarted) {
+      timerRef.current = setInterval(() => {
+        setTime(prev => prev + 1);
+      }, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isGameStarted]);
 
   const generateQuestion = () => {
     setNum1(Math.floor(Math.random() * 11) + 2);
@@ -94,67 +111,123 @@ const Game: React.FC<GameProps> = () => {
     navigate('/');
   };
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-center">Multiplication Game</h1>
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-3">
-          {user?.photoURL && (
-            <img
-              src={user.photoURL}
-              alt={`${user.firstName} ${user.lastName}`}
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          )}
-          <p className="font-semibold">
-            {user?.firstName} {user?.lastName}
-          </p>
-        </div>
-        <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
-      </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="text-2xl text-center font-bold">
-          {num1} x {num2} = ?
-        </div>
-        <input
-          ref={inputRef}
-          type="number"
-          value={userAnswer}
-          onChange={(e) => setUserAnswer(e.target.value)}
-          className="w-full p-2 border rounded"
-          placeholder="Enter your answer"
-          required
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const startGame = () => {
+    setIsGameStarted(true);
+    setTime(0);
+  };
+
+  // Dodajmy header z avatarem
+  const UserAvatar = () => (
+    <div className="absolute top-4 right-4 flex items-center space-x-3">
+      {user?.photoURL ? (
+        <img 
+          src={user.photoURL} 
+          alt={user.firstName}
+          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
         />
-        <button
-          type="submit"
-          className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
-        >
-          Submit Answer
-        </button>
-      </form>
-      <div className="flex justify-between">
-        <button
-          onClick={() => navigate('/progress')}
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 flex items-center"
-        >
-          <BarChart2 className="mr-2" size={20} />
-          View Progress
-        </button>
-        <button
-          onClick={() => navigate('/leaderboard')}
-          className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300 flex items-center"
-        >
-          <Users className="mr-2" size={20} />
-          Leaderboard
-        </button>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300 flex items-center"
-        >
-          <LogOut className="mr-2" size={20} />
-          Logout
-        </button>
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-md">
+          {user?.firstName?.[0]}{user?.lastName?.[0]}
+        </div>
+      )}
+      <span className="text-lg font-medium text-gray-700">
+        {user?.firstName}
+      </span>
+    </div>
+  );
+
+  const Timer = () => (
+    <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md px-4 py-2">
+      <div className="text-2xl font-bold text-gray-700">
+        {formatTime(time)}
       </div>
+    </div>
+  );
+
+  return (
+    <div className="relative min-h-screen bg-gradient-to-b from-orange-100 to-orange-200 p-4">
+      <UserAvatar />
+      <Timer />
+      
+      {!isGameStarted ? (
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <button
+            onClick={startGame}
+            className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
+                     shadow-lg hover:bg-blue-700 transition duration-300"
+          >
+            Rozpocznij grę
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold text-center">Multiplication Game</h1>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              {user?.photoURL && (
+                <img
+                  src={user.photoURL}
+                  alt={`${user.firstName} ${user.lastName}`}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              )}
+              <p className="font-semibold">
+                {user?.firstName} {user?.lastName}
+              </p>
+            </div>
+            <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="text-2xl text-center font-bold">
+              {num1} x {num2} = ?
+            </div>
+            <input
+              ref={inputRef}
+              type="number"
+              value={userAnswer}
+              onChange={(e) => setUserAnswer(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter your answer"
+              required
+            />
+            <button
+              type="submit"
+              className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
+            >
+              Submit Answer
+            </button>
+          </form>
+          <div className="flex justify-between">
+            <button
+              onClick={() => navigate('/progress')}
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 flex items-center"
+            >
+              <BarChart2 className="mr-2" size={20} />
+              View Progress
+            </button>
+            <button
+              onClick={() => navigate('/leaderboard')}
+              className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300 flex items-center"
+            >
+              <Users className="mr-2" size={20} />
+              Leaderboard
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300 flex items-center"
+            >
+              <LogOut className="mr-2" size={20} />
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
