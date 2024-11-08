@@ -7,21 +7,21 @@ import Proof from './components/Proof';
 import Leaderboard from './components/Leaderboard';
 import { UserProvider } from './contexts/UserContext';
 import { db, auth } from './firebase/config';
+import TitlePage from './components/TitlePage';
 
 function App() {
   return (
     <UserProvider>
       <Router>
-        <div className="min-h-screen bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
-          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-            <Routes>
-              <Route path="/" element={<Login />} />
-              <Route path="/game" element={<Game />} />
-              <Route path="/progress" element={<Progress />} />
-              <Route path="/proof" element={<Proof />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-            </Routes>
-          </div>
+        <div className="min-h-screen">
+          <Routes>
+            <Route path="/" element={<TitlePage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/game" element={<Game />} />
+            <Route path="/progress" element={<Progress />} />
+            <Route path="/proof" element={<Proof />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+          </Routes>
         </div>
       </Router>
     </UserProvider>
