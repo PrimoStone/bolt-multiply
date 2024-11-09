@@ -36,6 +36,13 @@ const Game: React.FC = () => {
     bestTime: 0
   });
 
+  console.log('User data:', {
+    fullUser: user,
+    photoURL: user?.photoURL,
+    firstName: user?.firstName,
+    lastName: user?.lastName
+  });
+
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -182,7 +189,7 @@ const Game: React.FC = () => {
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="focus:outline-none"
             >
-              {user?.photoURL ? (
+              {user?.photoURL && user.photoURL !== '' ? (
                 <img
                   src={user.photoURL}
                   alt="User avatar"
@@ -202,7 +209,7 @@ const Game: React.FC = () => {
                 {/* Profil użytkownika */}
                 <div className="px-4 py-3 border-b">
                   <div className="flex items-center space-x-3">
-                    {user?.photoURL ? (
+                    {user?.photoURL && user.photoURL !== '' ? (
                       <img
                         src={user.photoURL}
                         alt="Profile"

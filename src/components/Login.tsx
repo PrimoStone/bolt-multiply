@@ -68,7 +68,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-b from-orange-100 to-orange-200">
+    <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
         {/* Header z logo */}
         <div className="py-4 text-center flex-shrink-0">
