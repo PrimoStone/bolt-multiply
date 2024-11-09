@@ -122,39 +122,42 @@ const Game: React.FC<GameProps> = () => {
     setTime(0);
   };
 
-  // Dodajmy header z avatarem
-  const UserAvatar = () => (
-    <div className="absolute top-4 right-4 flex items-center space-x-3">
-      {user?.photoURL ? (
-        <img 
-          src={user.photoURL} 
-          alt={user.firstName}
-          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
-        />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-md">
-          {user?.firstName?.[0]}{user?.lastName?.[0]}
-        </div>
-      )}
-      <span className="text-lg font-medium text-gray-700">
-        {user?.firstName}
-      </span>
-    </div>
-  );
-
-  const Timer = () => (
-    <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md px-4 py-2">
-      <div className="text-2xl font-bold text-gray-700">
-        {formatTime(time)}
-      </div>
-    </div>
-  );
-
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-orange-100 to-orange-200 p-4">
-      <UserAvatar />
-      <Timer />
-      
+      {/* Logo w headerze */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
+        <img 
+          src="/number-ninjas-logo.png"
+          alt="Number Ninjas"
+          className="w-24 h-auto"
+        />
+      </div>
+
+      {/* Avatar użytkownika */}
+      <div className="absolute top-4 right-4 flex items-center space-x-3">
+        {user?.photoURL ? (
+          <img 
+            src={user.photoURL} 
+            alt={user.firstName}
+            className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-md">
+            {user?.firstName?.[0]}{user?.lastName?.[0]}
+          </div>
+        )}
+        <span className="text-lg font-medium text-gray-700">
+          {user?.firstName}
+        </span>
+      </div>
+
+      {/* Timer */}
+      <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md px-4 py-2">
+        <div className="text-2xl font-bold text-gray-700">
+          {formatTime(time)}
+        </div>
+      </div>
+
       {!isGameStarted ? (
         <div className="flex flex-col items-center justify-center min-h-screen">
           <button
@@ -166,21 +169,8 @@ const Game: React.FC<GameProps> = () => {
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          <h1 className="text-3xl font-bold text-center">Multiplication Game</h1>
+        <div className="space-y-6 pt-20">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              {user?.photoURL && (
-                <img
-                  src={user.photoURL}
-                  alt={`${user.firstName} ${user.lastName}`}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              )}
-              <p className="font-semibold">
-                {user?.firstName} {user?.lastName}
-              </p>
-            </div>
             <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
