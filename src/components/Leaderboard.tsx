@@ -60,7 +60,7 @@ const Leaderboard: React.FC = () => {
       <div>
         <h2 className="text-xl font-semibold mb-4">Najlepsze wyniki</h2>
         <div className="space-y-2">
-          {bestScores.map((stat, index) => (
+          {bestScores.slice(0, 3).map((stat, index) => (
             <div 
               key={stat.id}
               className="flex justify-between items-center p-3 bg-gray-50 rounded"
@@ -92,7 +92,7 @@ const Leaderboard: React.FC = () => {
       <div>
         <h2 className="text-xl font-semibold mb-4">Najwięcej czasu spędzonego</h2>
         <div className="space-y-2">
-          {mostPracticed.map((stat, index) => (
+          {mostPracticed.slice(0, 3).map((stat, index) => (
             <div 
               key={stat.id}
               className="flex justify-between items-center p-3 bg-gray-50 rounded"
@@ -124,7 +124,7 @@ const Leaderboard: React.FC = () => {
       <div>
         <h2 className="text-xl font-semibold mb-4">Najszybsze perfekcyjne gry</h2>
         <div className="space-y-2">
-          {fastestGames.map((stat, index) => (
+          {fastestGames.slice(0, 3).map((stat, index) => (
             <div 
               key={stat.id}
               className="flex justify-between items-center p-3 bg-gray-50 rounded"
