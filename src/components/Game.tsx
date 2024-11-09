@@ -10,6 +10,10 @@ interface GameProps {
   // twoje istniejące props
 }
 
+const getInitials = (firstName: string = '', lastName: string = '') => {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
 const Game: React.FC = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
@@ -125,10 +129,10 @@ const Game: React.FC = () => {
   return (
     <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
-        {/* Header z logo, statystykami i avatarem */}
-        <div className="h-[80px] py-4 flex justify-between items-center flex-shrink-0">
-          {/* Lewa strona - zegar i wynik */}
-          <div className="flex flex-col items-start space-y-1">
+        {/* Header z logo i avatarem */}
+        <div className="h-[80px] py-4 flex justify-between items-center flex-shrink-0 relative">
+          {/* Ukryj statystyki w headerze na mobile */}
+          <div className="hidden md:flex flex-col items-start space-y-1">
             <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
               <span className="text-gray-700 font-medium">Time:</span>
               <span className="ml-2 font-bold text-blue-600">{formatTime(time)}</span>
@@ -140,20 +144,40 @@ const Game: React.FC = () => {
           </div>
 
           {/* Środek - logo */}
-          <img 
-            src="/number-ninjas-logo.png"
-            alt="Number Ninjas"
-            className="w-24 h-auto mx-auto"
-          />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <img 
+              src="/number-ninjas-logo.png"
+              alt="Number Ninjas"
+              className="w-24 h-auto"
+            />
+          </div>
 
           {/* Prawa strona - avatar i imię */}
-          <div className="flex flex-col items-end">
-            <img
-              src={user?.photoURL}
-              alt="User avatar"
-              className="w-12 h-12 rounded-full object-cover shadow-md"
-            />
+          <div className="flex flex-col items-end ml-auto">
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt="User avatar"
+                className="w-12 h-12 rounded-full object-cover shadow-md"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-md">
+                {getInitials(user?.firstName, user?.lastName)}
+              </div>
+            )}
             <div className="text-sm font-medium mt-1 text-gray-700">{user?.firstName}</div>
+          </div>
+        </div>
+
+        {/* Statystyki na mobile pod headerem */}
+        <div className="md:hidden flex justify-center space-x-4 py-2">
+          <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
+            <span className="text-gray-700 font-medium">Time:</span>
+            <span className="ml-2 font-bold text-blue-600">{formatTime(time)}</span>
+          </div>
+          <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
+            <span className="text-gray-700 font-medium">Score:</span>
+            <span className="ml-2 font-bold text-green-600">{score}/{questionsAnswered}</span>
           </div>
         </div>
 
