@@ -28,6 +28,13 @@ const Game: React.FC = () => {
   const [time, setTime] = useState(0);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [userStats, setUserStats] = useState({
+    totalGames: 0,
+    perfectGames: 0,
+    bestScore: 0,
+    bestTime: 0
+  });
 
   useEffect(() => {
     if (!user) {
@@ -55,6 +62,23 @@ const Game: React.FC = () => {
       }
     };
   }, [isGameStarted]);
+
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      if (user?.id) {
+        // Tutaj dodaj logikę pobierania statystyk z Firebase
+        // Tymczasowo używamy przykładowych danych
+        setUserStats({
+          totalGames: 15,
+          perfectGames: 5,
+          bestScore: 20,
+          bestTime: 45
+        });
+      }
+    };
+
+    fetchUserStats();
+  }, [user]);
 
   const generateQuestion = () => {
     setNum1(Math.floor(Math.random() * 11) + 2);
@@ -152,20 +176,99 @@ const Game: React.FC = () => {
             />
           </div>
 
-          {/* Prawa strona - avatar i imię */}
-          <div className="flex flex-col items-end ml-auto">
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt="User avatar"
-                className="w-12 h-12 rounded-full object-cover shadow-md"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-md">
-                {getInitials(user?.firstName, user?.lastName)}
+          {/* Prawa strona - avatar, imię i menu */}
+          <div className="flex flex-col items-end ml-auto relative">
+            <button 
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="focus:outline-none"
+            >
+              {user?.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt="User avatar"
+                  className="w-12 h-12 rounded-full object-cover shadow-md hover:ring-2 hover:ring-blue-400 transition-all"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:ring-2 hover:ring-blue-400 transition-all">
+                  {getInitials(user?.firstName, user?.lastName)}
+                </div>
+              )}
+            </button>
+            <div className="text-sm font-medium mt-1 text-gray-700">{user?.firstName}</div>
+
+            {/* User Menu Popup */}
+            {isUserMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-lg py-2 z-50">
+                {/* Profil użytkownika */}
+                <div className="px-4 py-3 border-b">
+                  <div className="flex items-center space-x-3">
+                    {user?.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                        {getInitials(user?.firstName, user?.lastName)}
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-medium">{user?.firstName} {user?.lastName}</div>
+                      <div className="text-sm text-gray-500">@{user?.username}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Statystyki użytkownika */}
+                <div className="px-4 py-3 border-b">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Statistics</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">Total Games</div>
+                      <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">Perfect Games</div>
+                      <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
+                    </div>
+                    <div className="bg-purple-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">Best Score</div>
+                      <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
+                    </div>
+                    <div className="bg-orange-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">Best Time</div>
+                      <div className="text-lg font-bold text-orange-600">{formatTime(userStats.bestTime)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dane użytkownika */}
+                <div className="px-4 py-2 border-b">
+                  <div className="text-sm text-gray-600">
+                    <div className="mb-2">
+                      <span className="font-medium">Username:</span> {user?.username}
+                    </div>
+                    <div className="mb-2">
+                      <span className="font-medium">First Name:</span> {user?.firstName}
+                    </div>
+                    <div className="mb-2">
+                      <span className="font-medium">Last Name:</span> {user?.lastName}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Przycisk wylogowania */}
+                <div className="px-4 py-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
             )}
-            <div className="text-sm font-medium mt-1 text-gray-700">{user?.firstName}</div>
           </div>
         </div>
 
