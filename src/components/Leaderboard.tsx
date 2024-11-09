@@ -58,9 +58,8 @@ const Leaderboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-b from-orange-100 to-orange-200 overflow-auto">
-      <div className="max-w-3xl mx-auto px-4 h-full relative flex flex-col">
-        {/* Header z logo */}
+    <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200 overflow-auto">
+      <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
         <div className="pt-4 pb-4 text-center">
           <img 
             src="/number-ninjas-logo.png"
@@ -69,25 +68,10 @@ const Leaderboard: React.FC = () => {
           />
         </div>
 
-        {/* Główna zawartość */}
-        <div className="flex-1 flex flex-col space-y-8 py-4">
-          {/* Przycisk powrotu i tytuł */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <button
-              onClick={() => navigate('/game')}
-              className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 w-full md:w-auto"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span>Powrót do gry</span>
-            </button>
-            <h1 className="text-2xl font-bold">Ranking</h1>
-          </div>
-
-          {/* Sekcje rankingu */}
-          <div className="space-y-8 overflow-auto">
-            {/* Najlepsze wyniki */}
+        <div className="flex-1 flex flex-col justify-center items-center">
+          <div className="w-full max-w-md space-y-8">
             <div>
-              <h2 className="text-xl font-semibold mb-4">Najlepsze wyniki</h2>
+              <h2 className="text-xl font-semibold mb-4">Best Scores</h2>
               <div className="space-y-2">
                 {bestScores.slice(0, 3).map((stat, index) => (
                   <div 
@@ -117,9 +101,8 @@ const Leaderboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Najwięcej czasu */}
             <div>
-              <h2 className="text-xl font-semibold mb-4">Najwięcej czasu spędzonego</h2>
+              <h2 className="text-xl font-semibold mb-4">Most Time Spent</h2>
               <div className="space-y-2">
                 {mostPracticed.slice(0, 3).map((stat, index) => (
                   <div 
@@ -149,9 +132,8 @@ const Leaderboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Najszybsze gry */}
             <div>
-              <h2 className="text-xl font-semibold mb-4">Najszybsze perfekcyjne gry</h2>
+              <h2 className="text-xl font-semibold mb-4">Fastest Perfect Games</h2>
               <div className="space-y-2">
                 {fastestGames.slice(0, 3).map((stat, index) => (
                   <div 
@@ -167,10 +149,16 @@ const Leaderboard: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            <button
+              onClick={() => navigate('/game')}
+              className="w-full bg-blue-500 text-white p-4 rounded-lg text-xl font-bold hover:bg-blue-600 transition duration-300"
+            >
+              Back to Game
+            </button>
           </div>
         </div>
 
-        {/* Footer z logo */}
         <div className="py-4 text-center">
           <img 
             src="/MrPrimo-LOGO-sm.png"

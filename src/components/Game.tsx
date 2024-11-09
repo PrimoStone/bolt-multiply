@@ -142,7 +142,7 @@ const Game: React.FC = () => {
               className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
                         shadow-lg hover:bg-blue-700 transition duration-300"
             >
-              Rozpocznij grę
+              Start Game
             </button>
           ) : (
             <div className="space-y-6 pt-20">
