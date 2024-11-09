@@ -43,6 +43,20 @@ const Leaderboard: React.FC = () => {
   if (loading) return <div className="text-center">Ładowanie...</div>;
   if (error) return <div className="text-red-500 text-center">{error}</div>;
 
+  // Dodajmy helper do wyświetlania medali
+  const getMedalEmoji = (index: number) => {
+    switch (index) {
+      case 0:
+        return '🏆';
+      case 1:
+        return '🥈';
+      case 2:
+        return '🥉';
+      default:
+        return `${index + 1}.`;
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-6">
@@ -66,7 +80,7 @@ const Leaderboard: React.FC = () => {
               className="flex justify-between items-center p-3 bg-gray-50 rounded"
             >
               <div className="flex items-center space-x-3">
-                <span className="font-bold w-6">{index + 1}.</span>
+                <span className="font-bold w-6 text-xl">{getMedalEmoji(index)}</span>
                 {stat.photoURL ? (
                   <img
                     src={stat.photoURL}
@@ -98,7 +112,7 @@ const Leaderboard: React.FC = () => {
               className="flex justify-between items-center p-3 bg-gray-50 rounded"
             >
               <div className="flex items-center space-x-3">
-                <span className="font-bold w-6">{index + 1}.</span>
+                <span className="font-bold w-6 text-xl">{getMedalEmoji(index)}</span>
                 {stat.photoURL ? (
                   <img
                     src={stat.photoURL}
@@ -129,13 +143,11 @@ const Leaderboard: React.FC = () => {
               key={stat.id}
               className="flex justify-between items-center p-3 bg-gray-50 rounded"
             >
-              <div className="flex items-center space-x-2">
-                <span className="font-bold">{index + 1}.</span>
+              <div className="flex items-center space-x-3">
+                <span className="font-bold w-6 text-xl">{getMedalEmoji(index)}</span>
                 <span>{stat.firstName} {stat.lastName}</span>
               </div>
-              <span className="font-bold">
-                {stat.timeSpent} sek
-              </span>
+              <span className="font-bold">{stat.timeSpent} sek</span>
             </div>
           ))}
         </div>
