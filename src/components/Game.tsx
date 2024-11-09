@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
-import { Award, BarChart2, LogOut, Users } from 'lucide-react';
+import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
 import { saveGameStats } from '../firebase/utils';
 
 const TOTAL_QUESTIONS = 20;
@@ -10,7 +10,7 @@ interface GameProps {
   // twoje istniejące props
 }
 
-const Game: React.FC<GameProps> = () => {
+const Game: React.FC = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
   const [num1, setNum1] = useState(0);
@@ -123,109 +123,115 @@ const Game: React.FC<GameProps> = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-orange-100 to-orange-200 p-4">
-      {/* Logo w headerze */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
-        <img 
-          src="/number-ninjas-logo.png"
-          alt="Number Ninjas"
-          className="w-24 h-auto"
-        />
-      </div>
-
-      {/* Avatar użytkownika */}
-      <div className="absolute top-4 right-4 flex items-center space-x-3">
-        {user?.photoURL ? (
+    <div className="relative min-h-screen bg-gradient-to-b from-orange-100 to-orange-200">
+      {/* Container dla całej zawartości */}
+      <div className="max-w-3xl mx-auto px-4 min-h-screen relative">
+        {/* Header z logo Number Ninjas */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
           <img 
-            src={user.photoURL} 
-            alt={user.firstName}
-            className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
+            src="/number-ninjas-logo.png"
+            alt="Number Ninjas"
+            className="w-24 h-auto"
           />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-md">
-            {user?.firstName?.[0]}{user?.lastName?.[0]}
-          </div>
-        )}
-        <span className="text-lg font-medium text-gray-700">
-          {user?.firstName}
-        </span>
-      </div>
-
-      {/* Timer */}
-      <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md px-4 py-2">
-        <div className="text-2xl font-bold text-gray-700">
-          {formatTime(time)}
         </div>
-      </div>
 
-      {!isGameStarted ? (
-        <div className="flex flex-col items-center justify-center min-h-screen">
-          <button
-            onClick={startGame}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
-                     shadow-lg hover:bg-blue-700 transition duration-300"
-          >
-            Rozpocznij grę
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-6 pt-20">
-          <div className="flex justify-between items-center">
-            <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
+        {/* Główna zawartość gry */}
+        <div className="pt-24 pb-16"> {/* Padding dla headerów i footera */}
+          {/* Avatar użytkownika */}
+          <div className="absolute top-4 right-4 flex items-center space-x-3">
+            {user?.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt={user.firstName}
+                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-md">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </div>
+            )}
+            <span className="text-lg font-medium text-gray-700">
+              {user?.firstName}
+            </span>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="text-2xl text-center font-bold">
-              {num1} x {num2} = ?
+
+          {/* Timer */}
+          <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md px-4 py-2">
+            <div className="text-2xl font-bold text-gray-700">
+              {formatTime(time)}
             </div>
-            <input
-              ref={inputRef}
-              type="number"
-              value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
-              className="w-full p-2 border rounded"
-              placeholder="Enter your answer"
-              required
-            />
-            <button
-              type="submit"
-              className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
-            >
-              Submit Answer
-            </button>
-          </form>
-          <div className="flex justify-between">
-            <button
-              onClick={() => navigate('/progress')}
-              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 flex items-center"
-            >
-              <BarChart2 className="mr-2" size={20} />
-              View Progress
-            </button>
-            <button
-              onClick={() => navigate('/leaderboard')}
-              className="bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300 flex items-center"
-            >
-              <Users className="mr-2" size={20} />
-              Leaderboard
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300 flex items-center"
-            >
-              <LogOut className="mr-2" size={20} />
-              Logout
-            </button>
           </div>
-        </div>
-      )}
 
-      {/* Footer z logo MrPrimo */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-        <img 
-          src="/MrPrimo-LOGO-sm.png"
-          alt="MrPrimo"
-          className="w-16 h-auto opacity-80 hover:opacity-100 transition-opacity"
-        />
+          {!isGameStarted ? (
+            <div className="flex flex-col items-center justify-center min-h-screen">
+              <button
+                onClick={startGame}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
+                         shadow-lg hover:bg-blue-700 transition duration-300"
+              >
+                Rozpocznij grę
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6 pt-20">
+              <div className="flex justify-between items-center">
+                <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="text-2xl text-center font-bold">
+                  {num1} x {num2} = ?
+                </div>
+                <input
+                  ref={inputRef}
+                  type="number"
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="Enter your answer"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
+                >
+                  Submit Answer
+                </button>
+              </form>
+              <div className="flex justify-between">
+                <button
+                  onClick={() => navigate('/progress')}
+                  className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300"
+                >
+                  <BarChart2 className="h-5 w-5" />
+                  <span>View Progress</span>
+                </button>
+                <button
+                  onClick={() => navigate('/leaderboard')}
+                  className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
+                >
+                  <Users className="h-5 w-5" />
+                  <span>Leaderboard</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer z logo MrPrimo */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+          <img 
+            src="/MrPrimo-LOGO-sm.png"
+            alt="MrPrimo"
+            className="w-16 h-auto opacity-80 hover:opacity-100 transition-opacity"
+          />
+        </div>
       </div>
     </div>
   );
