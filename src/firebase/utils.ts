@@ -8,6 +8,7 @@ interface User {
   username: string;
   firstName: string;
   lastName: string;
+  photoURL?: string;
 }
 
 const storage = getStorage();
@@ -120,7 +121,8 @@ export const loginUser = async (username: string, password: string) => {
       id: querySnapshot.docs[0].id,
       username: userData.username,
       firstName: userData.firstName,
-      lastName: userData.lastName
+      lastName: userData.lastName,
+      photoURL: userData.photoURL
     };
   } catch (error) {
     console.error('Błąd podczas logowania:', error);
