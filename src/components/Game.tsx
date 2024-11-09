@@ -123,20 +123,19 @@ const Game: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-orange-100 to-orange-200">
-      {/* Container dla całej zawartości */}
-      <div className="max-w-3xl mx-auto px-4 min-h-screen relative">
-        {/* Header z logo Number Ninjas */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
+    <div className="min-h-screen h-screen bg-gradient-to-b from-orange-100 to-orange-200">
+      <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
+        {/* Header z logo */}
+        <div className="py-4 text-center flex-shrink-0">
           <img 
             src="/number-ninjas-logo.png"
             alt="Number Ninjas"
-            className="w-24 h-auto"
+            className="w-24 h-auto mx-auto"
           />
         </div>
 
         {/* Główna zawartość gry */}
-        <div className="pt-24 pb-16"> {/* Padding dla headerów i footera */}
+        <div className="flex-grow flex flex-col items-center justify-center overflow-y-auto py-4">
           {/* Avatar użytkownika */}
           <div className="absolute top-4 right-4 flex items-center space-x-3">
             {user?.photoURL ? (
@@ -224,12 +223,12 @@ const Game: React.FC = () => {
           )}
         </div>
 
-        {/* Footer z logo MrPrimo */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+        {/* Footer z logo */}
+        <div className="py-4 text-center flex-shrink-0">
           <img 
             src="/MrPrimo-LOGO-sm.png"
             alt="MrPrimo"
-            className="w-16 h-auto opacity-80 hover:opacity-100 transition-opacity"
+            className="w-16 h-auto mx-auto opacity-80 hover:opacity-100 transition-opacity"
           />
         </div>
       </div>

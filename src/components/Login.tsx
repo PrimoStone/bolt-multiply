@@ -68,10 +68,10 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-b from-orange-100 to-orange-200 overflow-auto">
-      <div className="max-w-3xl mx-auto px-4 h-full relative flex flex-col">
+    <div className="min-h-screen h-screen bg-gradient-to-b from-orange-100 to-orange-200">
+      <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
         {/* Header z logo */}
-        <div className="pt-4 pb-4 text-center">
+        <div className="py-4 text-center flex-shrink-0">
           <img 
             src="/number-ninjas-logo.png"
             alt="Number Ninjas"
@@ -79,8 +79,8 @@ const Login: React.FC = () => {
           />
         </div>
 
-        {/* Formularz logowania - zachowujemy oryginalną logikę */}
-        <div className="flex-1 flex flex-col justify-center items-center">
+        {/* Główna zawartość */}
+        <div className="flex-grow flex items-center justify-center overflow-y-auto py-4">
           <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
             {/* Tutaj istniejący formularz */}
             <form onSubmit={handleSubmit}>
@@ -183,7 +183,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Footer z logo */}
-        <div className="py-4 text-center">
+        <div className="py-4 text-center flex-shrink-0">
           <img 
             src="/MrPrimo-LOGO-sm.png"
             alt="MrPrimo"
