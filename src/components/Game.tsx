@@ -134,66 +134,80 @@ const Game: React.FC = () => {
           />
         </div>
 
-        {/* Główna zawartość gry */}
-        <div className="h-[calc(100dvh-160px)] flex items-center justify-center">
-          {!isGameStarted ? (
-            <button
-              onClick={startGame}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
-                        shadow-lg hover:bg-blue-700 transition duration-300"
-            >
-              Start Game
-            </button>
-          ) : (
-            <div className="space-y-6 pt-20">
-              <div className="flex justify-between items-center">
-                <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
-              </div>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="text-2xl text-center font-bold">
-                  {num1} x {num2} = ?
+        {/* Kontener łączący obrazek i interfejs gry */}
+        <div className="h-[calc(100dvh-160px)] flex flex-col">
+          {/* Obrazek multiply */}
+          <div className="h-[20dvh] flex items-center justify-center">
+            <img 
+              src="/multiply.png"
+              alt="Multiply"
+              className="h-full w-auto object-contain"
+            />
+          </div>
+
+          {/* Główna zawartość gry */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="flex flex-col items-center">
+              {!isGameStarted ? (
+                <button
+                  onClick={startGame}
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
+                            shadow-lg hover:bg-blue-700 transition duration-300"
+                >
+                  Start Game
+                </button>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  <div className="flex justify-between items-center">
+                    <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
+                  </div>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="text-2xl text-center font-bold">
+                      {num1} x {num2} = ?
+                    </div>
+                    <input
+                      ref={inputRef}
+                      type="number"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      className="w-full p-2 border rounded"
+                      placeholder="Enter your answer"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
+                    >
+                      Submit Answer
+                    </button>
+                  </form>
+                  <div className="flex justify-between">
+                    <button
+                      onClick={() => navigate('/progress')}
+                      className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300"
+                    >
+                      <BarChart2 className="h-5 w-5" />
+                      <span>View Progress</span>
+                    </button>
+                    <button
+                      onClick={() => navigate('/leaderboard')}
+                      className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
+                    >
+                      <Users className="h-5 w-5" />
+                      <span>Leaderboard</span>
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
+                    >
+                      <LogOut className="h-5 w-5" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
                 </div>
-                <input
-                  ref={inputRef}
-                  type="number"
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  className="w-full p-2 border rounded"
-                  placeholder="Enter your answer"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
-                >
-                  Submit Answer
-                </button>
-              </form>
-              <div className="flex justify-between">
-                <button
-                  onClick={() => navigate('/progress')}
-                  className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300"
-                >
-                  <BarChart2 className="h-5 w-5" />
-                  <span>View Progress</span>
-                </button>
-                <button
-                  onClick={() => navigate('/leaderboard')}
-                  className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
-                >
-                  <Users className="h-5 w-5" />
-                  <span>Leaderboard</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Logout</span>
-                </button>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Footer z logo */}
