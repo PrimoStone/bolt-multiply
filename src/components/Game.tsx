@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
 import { saveGameStats } from '../firebase/utils';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import { convertToBase64 } from '../firebase/utils';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -35,12 +38,22 @@ const Game: React.FC = () => {
     bestScore: 0,
     bestTime: 0
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  console.log('User data:', {
-    fullUser: user,
+  useEffect(() => {
+    console.log('User data:', {
+      fullUser: user,
+      photoURL: user?.photoURL || null,
+      firstName: user?.firstName,
+      lastName: user?.lastName
+    });
+  }, []);
+
+  console.log('User photo data:', {
+    hasPhoto: !!user?.photoURL,
     photoURL: user?.photoURL,
-    firstName: user?.firstName,
-    lastName: user?.lastName
+    photoURLType: typeof user?.photoURL,
+    photoURLLength: user?.photoURL?.length
   });
 
   useEffect(() => {
@@ -157,6 +170,36 @@ const Game: React.FC = () => {
     setTime(0);
   };
 
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    try {
+      // Kompresja i konwersja do base64
+      const base64String = await convertToBase64(file);
+      
+      // Aktualizacja w Firebase
+      const userDocRef = doc(db, 'users', user.id);
+      await updateDoc(userDocRef, {
+        photoURL: base64String
+      });
+
+      // Aktualizacja w UserContext
+      setUser({
+        ...user,
+        photoURL: base64String
+      });
+
+    } catch (error) {
+      console.error('Błąd podczas aktualizacji zdjęcia:', error);
+      alert('Nie udało się zaktualizować zdjęcia profilowego');
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
@@ -189,7 +232,7 @@ const Game: React.FC = () => {
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="focus:outline-none"
             >
-              {user?.photoURL && user.photoURL !== '' ? (
+              {user?.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt="User avatar"
@@ -209,17 +252,47 @@ const Game: React.FC = () => {
                 {/* Profil użytkownika */}
                 <div className="px-4 py-3 border-b">
                   <div className="flex items-center space-x-3">
-                    {user?.photoURL && user.photoURL !== '' ? (
-                      <img
-                        src={user.photoURL}
-                        alt="Profile"
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                        {getInitials(user?.firstName, user?.lastName)}
+                    {/* Avatar z możliwością zmiany */}
+                    <div 
+                      className="relative group cursor-pointer"
+                      onClick={handleAvatarClick}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Zmień zdjęcie profilowe"
+                    >
+                      {user?.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt="Profile"
+                          className="w-16 h-16 rounded-full object-cover 
+                                   group-hover:opacity-80 transition-all duration-200"
+                        />
+                      ) : (
+                        <div 
+                          className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center 
+                                   text-white font-bold group-hover:bg-blue-600 transition-all duration-200"
+                        >
+                          {getInitials(user?.firstName, user?.lastName)}
+                        </div>
+                      )}
+                      {/* Overlay z tekstem */}
+                      <div className="absolute inset-0 flex items-center justify-center 
+                                    bg-black bg-opacity-0 group-hover:bg-opacity-30 
+                                    rounded-full transition-all duration-200">
+                        <div className="text-white text-xs font-medium opacity-0 
+                                      group-hover:opacity-100 transition-all duration-200 
+                                      px-2 py-1 bg-black bg-opacity-50 rounded-lg">
+                          Zmień zdjęcie
+                        </div>
                       </div>
-                    )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoChange}
+                      />
+                    </div>
                     <div>
                       <div className="font-medium">{user?.firstName} {user?.lastName}</div>
                       <div className="text-sm text-gray-500">@{user?.username}</div>
