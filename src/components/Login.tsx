@@ -68,99 +68,117 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-center">Gra Matematyczna</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Nazwa użytkownika</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
+    <div className="min-h-screen h-screen bg-gradient-to-b from-orange-100 to-orange-200 overflow-auto">
+      <div className="max-w-3xl mx-auto px-4 h-full relative flex flex-col">
+        {/* Header z logo */}
+        <div className="pt-4 pb-4 text-center">
+          <img 
+            src="/number-ninjas-logo.png"
+            alt="Number Ninjas"
+            className="w-24 h-auto mx-auto"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Hasło</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
+
+        {/* Formularz logowania - zachowujemy oryginalną logikę */}
+        <div className="flex-1 flex flex-col justify-center items-center">
+          <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+            {/* Tutaj istniejący formularz */}
+            <form onSubmit={handleSubmit}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nazwa użytkownika</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Hasło</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+              </div>
+              
+              {isRegistering && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Imię</label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Avatar (zostanie automatycznie zmniejszony)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="w-full p-2 border rounded"
+                    />
+                    {photoError && (
+                      <p className="text-red-500 text-sm mt-1">{photoError}</p>
+                    )}
+                    {photoPreview && (
+                      <div className="mt-2">
+                        <img
+                          src={photoPreview}
+                          alt="Preview"
+                          className="w-20 h-20 object-cover rounded-full mx-auto"
+                        />
+                        <p className="text-xs text-gray-500 text-center mt-1">
+                          Zdjęcie zostanie automatycznie zoptymalizowane
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+              
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 disabled:bg-blue-300"
+              >
+                {loading ? 'Przetwarzanie...' : (isRegistering ? 'Zarejestruj się' : 'Zaloguj się')}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Footer z logo */}
+        <div className="py-4 text-center">
+          <img 
+            src="/MrPrimo-LOGO-sm.png"
+            alt="MrPrimo"
+            className="w-16 h-auto mx-auto opacity-80 hover:opacity-100 transition-opacity"
           />
         </div>
-        
-        {isRegistering && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Imię</label>
-              <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Avatar (zostanie automatycznie zmniejszony)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="w-full p-2 border rounded"
-              />
-              {photoError && (
-                <p className="text-red-500 text-sm mt-1">{photoError}</p>
-              )}
-              {photoPreview && (
-                <div className="mt-2">
-                  <img
-                    src={photoPreview}
-                    alt="Preview"
-                    className="w-20 h-20 object-cover rounded-full mx-auto"
-                  />
-                  <p className="text-xs text-gray-500 text-center mt-1">
-                    Zdjęcie zostanie automatycznie zoptymalizowane
-                  </p>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 disabled:bg-blue-300"
-        >
-          {loading ? 'Przetwarzanie...' : (isRegistering ? 'Zarejestruj się' : 'Zaloguj się')}
-        </button>
-      </form>
-
-      <button
-        onClick={() => setIsRegistering(!isRegistering)}
-        className="w-full text-blue-500 hover:text-blue-600"
-      >
-        {isRegistering ? 'Masz już konto? Zaloguj się' : 'Nie masz konta? Zarejestruj się'}
-      </button>
+      </div>
     </div>
   );
 };
