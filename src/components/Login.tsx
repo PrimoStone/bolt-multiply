@@ -167,6 +167,18 @@ const Login: React.FC = () => {
                 {loading ? 'Przetwarzanie...' : (isRegistering ? 'Zarejestruj się' : 'Zaloguj się')}
               </button>
             </form>
+
+            {/* Zamień sekcję z linkiem na przełącznik */}
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setIsRegistering(!isRegistering)}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                {isRegistering 
+                  ? 'Masz już konto? Zaloguj się' 
+                  : 'Nie masz jeszcze konta? Zarejestruj się'}
+              </button>
+            </div>
           </div>
         </div>
 
