@@ -123,10 +123,10 @@ const Game: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-gradient-to-b from-orange-100 to-orange-200">
+    <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
         {/* Header z logo */}
-        <div className="py-4 text-center flex-shrink-0">
+        <div className="h-[80px] py-4 text-center flex-shrink-0">
           <img 
             src="/number-ninjas-logo.png"
             alt="Number Ninjas"
@@ -135,42 +135,15 @@ const Game: React.FC = () => {
         </div>
 
         {/* Główna zawartość gry */}
-        <div className="flex-grow flex flex-col items-center justify-center overflow-y-auto py-4">
-          {/* Avatar użytkownika */}
-          <div className="absolute top-4 right-4 flex items-center space-x-3">
-            {user?.photoURL ? (
-              <img 
-                src={user.photoURL} 
-                alt={user.firstName}
-                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-md">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </div>
-            )}
-            <span className="text-lg font-medium text-gray-700">
-              {user?.firstName}
-            </span>
-          </div>
-
-          {/* Timer */}
-          <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md px-4 py-2">
-            <div className="text-2xl font-bold text-gray-700">
-              {formatTime(time)}
-            </div>
-          </div>
-
+        <div className="h-[calc(100dvh-160px)] flex items-center justify-center">
           {!isGameStarted ? (
-            <div className="flex flex-col items-center justify-center min-h-screen">
-              <button
-                onClick={startGame}
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
-                         shadow-lg hover:bg-blue-700 transition duration-300"
-              >
-                Rozpocznij grę
-              </button>
-            </div>
+            <button
+              onClick={startGame}
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
+                        shadow-lg hover:bg-blue-700 transition duration-300"
+            >
+              Rozpocznij grę
+            </button>
           ) : (
             <div className="space-y-6 pt-20">
               <div className="flex justify-between items-center">
@@ -224,7 +197,7 @@ const Game: React.FC = () => {
         </div>
 
         {/* Footer z logo */}
-        <div className="py-4 text-center flex-shrink-0">
+        <div className="h-[80px] py-4 text-center flex-shrink-0">
           <img 
             src="/MrPrimo-LOGO-sm.png"
             alt="MrPrimo"
