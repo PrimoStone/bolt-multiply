@@ -218,6 +218,15 @@ const Game: React.FC<GameProps> = () => {
           </div>
         </div>
       )}
+
+      {/* Footer z logo MrPrimo */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+        <img 
+          src="/MrPrimo-LOGO-sm.png"
+          alt="MrPrimo"
+          className="w-16 h-auto opacity-80 hover:opacity-100 transition-opacity"
+        />
+      </div>
     </div>
   );
 };
