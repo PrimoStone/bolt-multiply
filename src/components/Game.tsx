@@ -125,13 +125,36 @@ const Game: React.FC = () => {
   return (
     <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
-        {/* Header z logo */}
-        <div className="h-[80px] py-4 text-center flex-shrink-0">
+        {/* Header z logo, statystykami i avatarem */}
+        <div className="h-[80px] py-4 flex justify-between items-center flex-shrink-0">
+          {/* Lewa strona - zegar i wynik */}
+          <div className="flex flex-col items-start space-y-1">
+            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
+              <span className="text-gray-700 font-medium">Time:</span>
+              <span className="ml-2 font-bold text-blue-600">{formatTime(time)}</span>
+            </div>
+            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
+              <span className="text-gray-700 font-medium">Score:</span>
+              <span className="ml-2 font-bold text-green-600">{score}/{questionsAnswered}</span>
+            </div>
+          </div>
+
+          {/* Środek - logo */}
           <img 
             src="/number-ninjas-logo.png"
             alt="Number Ninjas"
             className="w-24 h-auto mx-auto"
           />
+
+          {/* Prawa strona - avatar i imię */}
+          <div className="flex flex-col items-end">
+            <img
+              src={user?.photoURL}
+              alt="User avatar"
+              className="w-12 h-12 rounded-full object-cover shadow-md"
+            />
+            <div className="text-sm font-medium mt-1 text-gray-700">{user?.firstName}</div>
+          </div>
         </div>
 
         {/* Kontener łączący obrazek i interfejs gry */}
@@ -158,9 +181,6 @@ const Game: React.FC = () => {
                 </button>
               ) : (
                 <div className="flex flex-col gap-6">
-                  <div className="flex justify-between items-center">
-                    <p className="font-semibold">Score: {score}/{questionsAnswered}</p>
-                  </div>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="text-2xl text-center font-bold">
                       {num1} x {num2} = ?
