@@ -4,13 +4,18 @@ import { UserContext } from '../contexts/UserContext';
 
 const GameSelect: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
     }
   }, [user, navigate]);
+
+  const handleLogout = () => {
+    setUser(null);
+    navigate('/login');
+  };
 
   if (!user) return null;
 
@@ -65,6 +70,27 @@ const GameSelect: React.FC = () => {
               <span className="mt-2 text-sm text-gray-400">Coming Soon</span>
             </div>
           </div>
+
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="mt-8 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 
+                     transition-colors duration-300 flex items-center"
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-5 w-5 mr-2" 
+              viewBox="0 0 20 20" 
+              fill="currentColor"
+            >
+              <path 
+                fillRule="evenodd" 
+                d="M3 3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H3zm11 4.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 7H7a1 1 0 1 1 0-2h6a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V7.414z" 
+                clipRule="evenodd" 
+              />
+            </svg>
+            Wyloguj się
+          </button>
         </div>
       </div>
     </div>
