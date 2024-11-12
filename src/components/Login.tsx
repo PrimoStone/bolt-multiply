@@ -48,22 +48,14 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
     try {
-      let userData;
-      if (isRegistering) {
-        userData = await registerUser(username, password, firstName, lastName, photoFile || undefined);
-      } else {
-        userData = await loginUser(username, password);
-      }
+      const userData = await loginUser(username, password);
       setUser(userData);
-      navigate('/game');
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
+      navigate('/');
+    } catch (err) {
+      setError('Nieprawidłowa nazwa użytkownika lub hasło');
     }
   };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Game from './components/Game';
 import Progress from './components/Progress';
@@ -8,23 +8,22 @@ import Leaderboard from './components/Leaderboard';
 import { UserProvider } from './contexts/UserContext';
 import { db, auth } from './firebase/config';
 import TitlePage from './components/TitlePage';
+import GameSelect from './components/GameSelect';
 
 function App() {
   return (
-    <UserProvider>
-      <Router>
-        <div className="min-h-screen">
-          <Routes>
-            <Route path="/" element={<TitlePage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/game" element={<Game />} />
-            <Route path="/progress" element={<Progress />} />
-            <Route path="/proof" element={<Proof />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-          </Routes>
-        </div>
-      </Router>
-    </UserProvider>
+    <Router>
+      <UserProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<GameSelect />} />
+          <Route path="/game" element={<Game />} />
+          <Route path="/progress" element={<Progress />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </UserProvider>
+    </Router>
   );
 }
 
