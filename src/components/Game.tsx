@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
 import { saveGameStats } from '../firebase/utils';
