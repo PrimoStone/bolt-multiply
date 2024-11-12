@@ -9,6 +9,7 @@ import { UserProvider } from './contexts/UserContext';
 import { db, auth } from './firebase/config';
 import TitlePage from './components/TitlePage';
 import GameSelect from './components/GameSelect';
+import DivisionGame from './components/DivisionGame';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/game" element={<Game />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/division" element={<DivisionGame />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </UserProvider>
