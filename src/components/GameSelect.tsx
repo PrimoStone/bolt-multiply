@@ -102,22 +102,14 @@ const GameSelect: React.FC = () => {
               <span>Leaderboard</span>
             </Link>
 
-            {/* User avatar - bez przycisku logout w dropdownie */}
+            {/* User avatar */}
             <div className="relative" ref={dropdownRef}>
               <div 
                 className="flex items-center space-x-3 cursor-pointer group"
                 onClick={() => setShowStats(!showStats)}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center">
                   {renderAvatar()}
-                  <div className="hidden md:block">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user?.firstName} {user?.lastName}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      @{user?.username}
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -193,35 +185,42 @@ const GameSelect: React.FC = () => {
         <div className="flex-grow flex flex-col items-center justify-center">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">Choose a Game</h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-2xl w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full">
             {/* Multiplication Game */}
-            <button
-              onClick={() => navigate('/game')}
-              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 flex flex-col items-center"
+            <Link 
+              to="/game" 
+              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
+                       overflow-hidden group"
             >
-              <img src="/multiply.png" alt="Multiplication" className="w-16 h-16 mb-4" />
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Multiplication</h2>
-              <p className="text-gray-600 text-center">Practice multiplication tables</p>
-            </button>
+              <div className="p-6 flex flex-col items-center">
+                <img 
+                  src="/multiply.png" 
+                  alt="Multiplication" 
+                  className="w-32 h-32 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                />
+                <h2 className="text-2xl font-bold text-gray-800 text-center">
+                  Multiplication
+                </h2>
+              </div>
+            </Link>
 
             {/* Division Game */}
-            <button
-              onClick={() => navigate('/division')}
-              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 flex flex-col items-center"
+            <Link 
+              to="/division" 
+              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
+                       overflow-hidden group"
             >
-              <img src="/division1.png" alt="Division" className="w-16 h-16 mb-4" />
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Division</h2>
-              <p className="text-gray-600 text-center">Practice division</p>
-            </button>
-
-            {/* Addition Game (Coming Soon) */}
-            <div
-              className="bg-white/50 rounded-lg shadow-lg p-6 cursor-not-allowed flex flex-col items-center"
-            >
-              <img src="/add.png" alt="Addition" className="w-16 h-16 mb-4 opacity-50" />
-              <h2 className="text-xl font-bold text-gray-400 mb-2">Addition</h2>
-              <p className="text-gray-400 text-center">Coming Soon!</p>
-            </div>
+              <div className="p-6 flex flex-col items-center">
+                <img 
+                  src="/division1.png" 
+                  alt="Division" 
+                  className="w-48 h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                />
+                <h2 className="text-2xl font-bold text-gray-800 text-center">
+                  Division
+                </h2>
+              </div>
+            </Link>
           </div>
         </div>
       </div>

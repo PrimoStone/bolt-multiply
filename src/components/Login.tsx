@@ -60,127 +60,112 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
-      <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
-        {/* Header z logo */}
-        <div className="py-4 text-center flex-shrink-0">
-          <img 
-            src="/number-ninjas-logo.png"
-            alt="Number Ninjas"
-            className="w-24 h-auto mx-auto"
-          />
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-orange-100 to-orange-200 flex flex-col justify-center items-center p-4">
+      <div className="mb-8 w-full max-w-md flex justify-center">
+        <img 
+          src="/number-ninjas-logo.png" 
+          alt="Number Ninjas" 
+          className="w-64 h-auto"
+        />
+      </div>
 
-        {/* Główna zawartość */}
-        <div className="flex-grow flex items-center justify-center overflow-y-auto py-4">
-          <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
-            {/* Tutaj istniejący formularz */}
-            <form onSubmit={handleSubmit}>
+      <div className="w-full max-w-md">
+        {/* Tutaj istniejący formularz */}
+        <form onSubmit={handleSubmit}>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nazwa użytkownika</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-2 border rounded"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Hasło</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 border rounded"
+              required
+            />
+          </div>
+          
+          {isRegistering && (
+            <>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Nazwa użytkownika</label>
+                <label className="block text-sm font-medium text-gray-700">Imię</label>
                 <input
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
                   className="w-full p-2 border rounded"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Hasło</label>
+                <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
                 <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
                   className="w-full p-2 border rounded"
                   required
                 />
               </div>
               
-              {isRegistering && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Imię</label>
-                    <input
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full p-2 border rounded"
-                      required
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Avatar (zostanie automatycznie zmniejszony)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="w-full p-2 border rounded"
+                />
+                {photoError && (
+                  <p className="text-red-500 text-sm mt-1">{photoError}</p>
+                )}
+                {photoPreview && (
+                  <div className="mt-2">
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      className="w-20 h-20 object-cover rounded-full mx-auto"
                     />
+                    <p className="text-xs text-gray-500 text-center mt-1">
+                      Zdjęcie zostanie automatycznie zoptymalizowane
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
-                    <input
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="w-full p-2 border rounded"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Avatar (zostanie automatycznie zmniejszony)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="w-full p-2 border rounded"
-                    />
-                    {photoError && (
-                      <p className="text-red-500 text-sm mt-1">{photoError}</p>
-                    )}
-                    {photoPreview && (
-                      <div className="mt-2">
-                        <img
-                          src={photoPreview}
-                          alt="Preview"
-                          className="w-20 h-20 object-cover rounded-full mx-auto"
-                        />
-                        <p className="text-xs text-gray-500 text-center mt-1">
-                          Zdjęcie zostanie automatycznie zoptymalizowane
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+                )}
+              </div>
+            </>
+          )}
 
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 disabled:bg-blue-300"
-              >
-                {loading ? 'Przetwarzanie...' : (isRegistering ? 'Zarejestruj się' : 'Zaloguj się')}
-              </button>
-            </form>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 disabled:bg-blue-300"
+          >
+            {loading ? 'Przetwarzanie...' : (isRegistering ? 'Zarejestruj się' : 'Zaloguj się')}
+          </button>
+        </form>
 
-            {/* Zamień sekcję z linkiem na przełącznik */}
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setIsRegistering(!isRegistering)}
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                {isRegistering 
-                  ? 'Masz już konto? Zaloguj się' 
-                  : 'Nie masz jeszcze konta? Zarejestruj się'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer z logo */}
-        <div className="py-4 text-center flex-shrink-0">
-          <img 
-            src="/MrPrimo-LOGO-sm.png"
-            alt="MrPrimo"
-            className="w-16 h-auto mx-auto opacity-80 hover:opacity-100 transition-opacity"
-          />
+        {/* Zamień sekcję z linkiem na przełącznik */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setIsRegistering(!isRegistering)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            {isRegistering 
+              ? 'Masz już konto? Zaloguj się' 
+              : 'Nie masz jeszcze konta? Zarejestruj się'}
+          </button>
         </div>
       </div>
     </div>
