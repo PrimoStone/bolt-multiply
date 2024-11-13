@@ -107,7 +107,12 @@ const DivisionGame: React.FC = () => {
       const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
       
-      // Zapisz statystyki gry
+      console.log('Game finished, saving stats:', {
+        score: finalScore,
+        time: timeSpent,
+        isPerfect: finalScore === TOTAL_QUESTIONS
+      });
+
       if (user) {
         try {
           await saveGameStats(
@@ -119,15 +124,15 @@ const DivisionGame: React.FC = () => {
             timeSpent,
             finalScore === TOTAL_QUESTIONS
           );
+          console.log('Game stats saved successfully');
+          
+          await refreshStats();
+          console.log('Stats refreshed');
         } catch (error) {
-          console.error('Błąd podczas zapisywania statystyk:', error);
+          console.error('Error saving game stats:', error);
         }
       }
 
-      // Po zapisie odśwież statystyki
-      await refreshStats();
-
-      // Przejdź do strony z wynikami
       navigate('/proof', { 
         state: { 
           score: score + (isCorrect ? 1 : 0), 

@@ -94,21 +94,24 @@ const Game: React.FC = () => {
     e.preventDefault();
     const correctAnswer = num1 * num2;
     const isCorrect = parseInt(userAnswer) === correctAnswer;
-    const result = `${num1} x ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
-    setGameHistory([...gameHistory, result]);
+    
     if (isCorrect) {
       setScore(score + 1);
     }
+    
     setQuestionsAnswered(questionsAnswered + 1);
 
-    if (questionsAnswered + 1 < TOTAL_QUESTIONS) {
-      generateQuestion();
-    } else {
+    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
       const endTime = new Date();
       const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
       
-      // Zapisz statystyki gry
+      console.log('Game finished, saving stats:', {
+        score: finalScore,
+        time: timeSpent,
+        isPerfect: finalScore === TOTAL_QUESTIONS
+      });
+
       if (user) {
         try {
           await saveGameStats(
@@ -120,24 +123,28 @@ const Game: React.FC = () => {
             timeSpent,
             finalScore === TOTAL_QUESTIONS
           );
+          console.log('Game stats saved successfully');
+          
+          // Odśwież statystyki po zapisie
+          await refreshStats();
+          console.log('Stats refreshed');
         } catch (error) {
-          console.error('Błąd podczas zapisywania statystyk:', error);
+          console.error('Error saving game stats:', error);
         }
       }
 
-      // Po zapisie statystyk, odśwież je
-      await refreshStats();
-
-      // Przejdź do strony z wynikami
       navigate('/proof', { 
         state: { 
-          score: score + (isCorrect ? 1 : 0), 
-          totalQuestions: TOTAL_QUESTIONS, 
-          startTime: startTime, 
+          score: finalScore, 
+          totalQuestions: TOTAL_QUESTIONS,
+          startTime: startTime,
           endTime: endTime,
-          gameHistory: [...gameHistory, result]
+          gameHistory: gameHistory
         } 
       });
+    } else {
+      generateQuestion();
+      setUserAnswer('');
     }
   };
 

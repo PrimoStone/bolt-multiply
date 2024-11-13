@@ -1,5 +1,5 @@
 import { db } from './config';
-import { collection, query, where, getDocs, addDoc, getDoc, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, getDoc, orderBy, limit, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 
@@ -176,26 +176,33 @@ export const saveGameStats = async (
   lastName: string,
   score: number,
   timeSpent: number,
-  isPerfectScore: boolean
+  isPerfect: boolean
 ) => {
   try {
-    // Pobierz dane użytkownika, aby uzyskać photoURL
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    const userData = userDoc.data();
-    
-    await addDoc(collection(db, 'stats'), {
+    console.log('Saving game stats:', {
+      userId,
+      score,
+      timeSpent,
+      isPerfect
+    });
+
+    const statsRef = collection(db, 'stats');
+    const newStats = {
       userId,
       username,
       firstName,
       lastName,
-      photoURL: userData?.photoURL || '', // Dodaj photoURL ze danych użytkownika
       score,
       timeSpent,
-      isPerfectScore,
-      timestamp: new Date()
-    });
+      timestamp: serverTimestamp()
+    };
+
+    await addDoc(statsRef, newStats);
+    console.log('Stats saved successfully');
+    
+    return true;
   } catch (error) {
-    console.error('Błąd podczas zapisywania statystyk:', error);
+    console.error('Error saving stats:', error);
     throw error;
   }
 };
