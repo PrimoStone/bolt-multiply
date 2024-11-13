@@ -55,7 +55,7 @@ const GameSelect: React.FC = () => {
               onClick={() => navigate('/division')}
               className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 flex flex-col items-center"
             >
-              <img src="/divide.png" alt="Division" className="w-16 h-16 mb-4" />
+              <img src="/division1.png" alt="Division" className="w-16 h-16 mb-4" />
               <h2 className="text-xl font-bold text-gray-800 mb-2">Dzielenie</h2>
               <p className="text-gray-600 text-center">Ćwicz dzielenie liczb</p>
             </button>

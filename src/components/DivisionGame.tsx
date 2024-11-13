@@ -347,6 +347,9 @@ const DivisionGame: React.FC = () => {
         {/* Game Content */}
         <div className="flex-grow flex flex-col items-center justify-center">
           <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+            <div className="flex justify-center mb-4">
+              <img src="/division1.png" alt="Division" className="w-16 h-16" />
+            </div>
             <h2 className="text-2xl font-bold text-center mb-4">Division Ninja</h2>
             {!isGameStarted ? (
               <div className="text-center">
