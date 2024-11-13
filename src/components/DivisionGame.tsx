@@ -366,7 +366,7 @@ const DivisionGame: React.FC = () => {
             <h2 className="text-2xl font-bold text-center mb-4">Division Ninja</h2>
             {!isGameStarted ? (
               <div className="text-center">
-                <p className="mb-4">Trenuj dzielenie liczb!</p>
+                <p className="mb-4">Practice division!</p>
                 <button
                   onClick={startGame}
                   className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
@@ -385,7 +385,7 @@ const DivisionGame: React.FC = () => {
                     type="number"
                     value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                     placeholder="Enter your answer"
                     required
                   />
@@ -393,21 +393,22 @@ const DivisionGame: React.FC = () => {
                     type="submit"
                     className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
                   >
-                    Submit Answer
+                    Check
                   </button>
                 </form>
+
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <Link 
                     to="/leaderboard"
                     className="text-center bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
                   >
-                    Ranking
+                    Leaderboard
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
                   >
-                    Wyjdź do menu
+                    Exit to Menu
                   </button>
                 </div>
               </>

@@ -362,7 +362,7 @@ const Game: React.FC = () => {
             <h2 className="text-2xl font-bold text-center mb-4">Multiplication Ninja</h2>
             {!isGameStarted ? (
               <div className="text-center">
-                <p className="mb-4">Trenuj tabliczkę mnożenia!</p>
+                <p className="mb-4">Practice multiplication tables!</p>
                 <button
                   onClick={startGame}
                   className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
@@ -382,30 +382,29 @@ const Game: React.FC = () => {
                     value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
                     className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    placeholder="Wpisz odpowiedź"
+                    placeholder="Enter your answer"
                     required
                   />
                   <button
                     type="submit"
                     className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
                   >
-                    Sprawdź
+                    Check
                   </button>
                 </form>
 
-                {/* Przyciski nawigacji */}
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <Link 
                     to="/leaderboard"
                     className="text-center bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
                   >
-                    Ranking
+                    Leaderboard
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
                   >
-                    Wyjdź do menu
+                    Exit to Menu
                   </button>
                 </div>
               </>

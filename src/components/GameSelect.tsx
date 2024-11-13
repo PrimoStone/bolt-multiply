@@ -30,14 +30,13 @@ const GameSelect: React.FC = () => {
             className="w-24 h-auto"
           />
           <div className="flex items-center space-x-4">
-            <Link to="/progress" className="text-gray-700 hover:text-gray-900">Postępy</Link>
-            <Link to="/leaderboard" className="text-gray-700 hover:text-gray-900">Ranking</Link>
+            <Link to="/leaderboard" className="text-gray-700 hover:text-gray-900">Leaderboard</Link>
           </div>
         </div>
 
         {/* Game Selection */}
         <div className="flex-grow flex flex-col items-center justify-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">Wybierz grę</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-8">Choose a Game</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-2xl w-full">
             {/* Multiplication Game */}
@@ -46,8 +45,8 @@ const GameSelect: React.FC = () => {
               className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 flex flex-col items-center"
             >
               <img src="/multiply.png" alt="Multiplication" className="w-16 h-16 mb-4" />
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Mnożenie</h2>
-              <p className="text-gray-600 text-center">Trenuj tabliczkę mnożenia</p>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Multiplication</h2>
+              <p className="text-gray-600 text-center">Practice multiplication tables</p>
             </button>
 
             {/* Division Game */}
@@ -56,8 +55,8 @@ const GameSelect: React.FC = () => {
               className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 flex flex-col items-center"
             >
               <img src="/division1.png" alt="Division" className="w-16 h-16 mb-4" />
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Dzielenie</h2>
-              <p className="text-gray-600 text-center">Ćwicz dzielenie liczb</p>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Division</h2>
+              <p className="text-gray-600 text-center">Practice division</p>
             </button>
 
             {/* Addition Game (Coming Soon) */}
@@ -65,33 +64,32 @@ const GameSelect: React.FC = () => {
               className="bg-white/50 rounded-lg shadow-lg p-6 cursor-not-allowed flex flex-col items-center"
             >
               <img src="/add.png" alt="Addition" className="w-16 h-16 mb-4 opacity-50" />
-              <h2 className="text-xl font-bold text-gray-400 mb-2">Dodawanie</h2>
-              <p className="text-gray-400 text-center">Już wkrótce!</p>
-              <span className="mt-2 text-sm text-gray-400">Coming Soon</span>
+              <h2 className="text-xl font-bold text-gray-400 mb-2">Addition</h2>
+              <p className="text-gray-400 text-center">Coming Soon!</p>
             </div>
           </div>
-
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            className="mt-8 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 
-                     transition-colors duration-300 flex items-center"
-          >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-5 w-5 mr-2" 
-              viewBox="0 0 20 20" 
-              fill="currentColor"
-            >
-              <path 
-                fillRule="evenodd" 
-                d="M3 3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H3zm11 4.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 7H7a1 1 0 1 1 0-2h6a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V7.414z" 
-                clipRule="evenodd" 
-              />
-            </svg>
-            Wyloguj się
-          </button>
         </div>
+
+        {/* Logout button */}
+        <button
+          onClick={handleLogout}
+          className="mt-8 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 
+                   transition-colors duration-300 flex items-center mx-auto"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-5 w-5 mr-2" 
+            viewBox="0 0 20 20" 
+            fill="currentColor"
+          >
+            <path 
+              fillRule="evenodd" 
+              d="M3 3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H3zm11 4.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L11.586 7H7a1 1 0 1 1 0-2h6a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0V7.414z" 
+              clipRule="evenodd" 
+            />
+          </svg>
+          Logout
+        </button>
       </div>
     </div>
   );
