@@ -36,6 +36,8 @@ const Game: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { userStats, refreshStats } = useUserStats(user?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showStats, setShowStats] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     console.log('User data:', {
@@ -83,6 +85,22 @@ const Game: React.FC = () => {
   useEffect(() => {
     console.log('Current user stats:', userStats);
   }, [userStats]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowStats(false);
+      }
+    };
+
+    if (showStats) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStats]);
 
   const generateQuestion = () => {
     setNum1(Math.floor(Math.random() * 11) + 2);
@@ -223,129 +241,133 @@ const Game: React.FC = () => {
 
           {/* Menu użytkownika po prawej */}
           <div className="flex flex-col items-end relative">
-            <button 
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="focus:outline-none"
-            >
-              {user?.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt="User avatar"
-                  className="w-12 h-12 rounded-full object-cover shadow-md hover:ring-2 hover:ring-blue-400 transition-all"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:ring-2 hover:ring-blue-400 transition-all">
-                  {getInitials(user?.firstName, user?.lastName)}
-                </div>
-              )}
-            </button>
-            <div className="text-sm font-medium mt-1 text-gray-700">{user?.firstName}</div>
-
-            {/* User Menu Popup */}
-            {isUserMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-lg py-2 z-50">
-                {/* Profil użytkownika */}
-                <div className="px-4 py-3 border-b">
-                  <div className="flex items-center space-x-3">
-                    {/* Avatar z możliwością zmiany */}
-                    <div 
-                      className="relative group cursor-pointer"
-                      onClick={handleAvatarClick}
-                      role="button"
-                      tabIndex={0}
-                      aria-label="Zmień zdjęcie profilowe"
-                    >
-                      {user?.photoURL ? (
-                        <img
-                          src={user.photoURL}
-                          alt="Profile"
-                          className="w-16 h-16 rounded-full object-cover 
-                                   group-hover:opacity-80 transition-all duration-200"
-                        />
-                      ) : (
-                        <div 
-                          className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center 
-                                   text-white font-bold group-hover:bg-blue-600 transition-all duration-200"
-                        >
-                          {getInitials(user?.firstName, user?.lastName)}
-                        </div>
-                      )}
-                      {/* Overlay z tekstem */}
-                      <div className="absolute inset-0 flex items-center justify-center 
-                                    bg-black bg-opacity-0 group-hover:bg-opacity-30 
-                                    rounded-full transition-all duration-200">
-                        <div className="text-white text-xs font-medium opacity-0 
-                                      group-hover:opacity-100 transition-all duration-200 
-                                      px-2 py-1 bg-black bg-opacity-50 rounded-lg">
-                          Zmień zdjęcie
-                        </div>
-                      </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handlePhotoChange}
-                      />
-                    </div>
-                    <div>
-                      <div className="font-medium">{user?.firstName} {user?.lastName}</div>
-                      <div className="text-sm text-gray-500">@{user?.username}</div>
-                    </div>
+            <div className="relative" ref={dropdownRef}>
+              <div 
+                className="flex items-center space-x-3 cursor-pointer group"
+                onClick={() => setShowStats(!showStats)}
+              >
+                {user?.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt="User avatar"
+                    className="w-12 h-12 rounded-full object-cover shadow-md hover:ring-2 hover:ring-blue-400 transition-all"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:ring-2 hover:ring-blue-400 transition-all">
+                    {getInitials(user?.firstName, user?.lastName)}
                   </div>
-                </div>
-                
-                {/* Statystyki użytkownika */}
-                <div className="px-4 py-3 border-b">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Statistics</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-blue-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Total Games</div>
-                      <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
-                    </div>
-                    <div className="bg-green-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Perfect Games</div>
-                      <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
-                    </div>
-                    <div className="bg-purple-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Best Score</div>
-                      <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
-                    </div>
-                    <div className="bg-orange-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Best Time</div>
-                      <div className="text-lg font-bold text-orange-600">
-                        {userStats.bestTime ? `${userStats.bestTime}s` : '-'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dane użytkownika */}
-                <div className="px-4 py-2 border-b">
-                  <div className="text-sm text-gray-600">
-                    <div className="mb-2">
-                      <span className="font-medium">Username:</span> {user?.username}
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-medium">First Name:</span> {user?.firstName}
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-medium">Last Name:</span> {user?.lastName}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Przycisk wylogowania */}
-                <div className="px-4 py-2">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                  >
-                    Wyjdź do menu
-                  </button>
+                )}
+                <div>
+                  <div className="font-medium">{user?.firstName} {user?.lastName}</div>
+                  <div className="text-sm text-gray-500">@{user?.username}</div>
                 </div>
               </div>
-            )}
+
+              {showStats && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
+                  {/* Profil użytkownika */}
+                  <div className="px-4 py-3 border-b">
+                    <div className="flex items-center space-x-3">
+                      {/* Avatar z możliwością zmiany */}
+                      <div 
+                        className="relative group cursor-pointer"
+                        onClick={handleAvatarClick}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Zmień zdjęcie profilowe"
+                      >
+                        {user?.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt="Profile"
+                            className="w-16 h-16 rounded-full object-cover 
+                                     group-hover:opacity-80 transition-all duration-200"
+                          />
+                        ) : (
+                          <div 
+                            className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center 
+                                     text-white font-bold group-hover:bg-blue-600 transition-all duration-200"
+                          >
+                            {getInitials(user?.firstName, user?.lastName)}
+                          </div>
+                        )}
+                        {/* Overlay z tekstem */}
+                        <div className="absolute inset-0 flex items-center justify-center 
+                                      bg-black bg-opacity-0 group-hover:bg-opacity-30 
+                                      rounded-full transition-all duration-200">
+                          <div className="text-white text-xs font-medium opacity-0 
+                                        group-hover:opacity-100 transition-all duration-200 
+                                        px-2 py-1 bg-black bg-opacity-50 rounded-lg">
+                            Zmień zdjęcie
+                          </div>
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handlePhotoChange}
+                        />
+                      </div>
+                      <div>
+                        <div className="font-medium">{user?.firstName} {user?.lastName}</div>
+                        <div className="text-sm text-gray-500">@{user?.username}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Statystyki użytkownika */}
+                  <div className="px-4 py-3 border-b">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Statistics</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-blue-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Total Games</div>
+                        <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
+                      </div>
+                      <div className="bg-green-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Perfect Games</div>
+                        <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
+                      </div>
+                      <div className="bg-purple-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Best Score</div>
+                        <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
+                      </div>
+                      <div className="bg-orange-50 p-2 rounded">
+                        <div className="text-xs text-gray-500">Best Time</div>
+                        <div className="text-lg font-bold text-orange-600">
+                          {userStats.bestTime ? `${userStats.bestTime}s` : '-'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dane użytkownika */}
+                  <div className="px-4 py-2 border-b">
+                    <div className="text-sm text-gray-600">
+                      <div className="mb-2">
+                        <span className="font-medium">Username:</span> {user?.username}
+                      </div>
+                      <div className="mb-2">
+                        <span className="font-medium">First Name:</span> {user?.firstName}
+                      </div>
+                      <div className="mb-2">
+                        <span className="font-medium">Last Name:</span> {user?.lastName}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Przycisk wylogowania */}
+                  <div className="px-4 py-2">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                    >
+                      Wyjdź do menu
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
