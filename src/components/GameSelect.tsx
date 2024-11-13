@@ -78,12 +78,26 @@ const GameSelect: React.FC = () => {
           <div className="flex items-center space-x-6">
             <Link 
               to="/leaderboard" 
-              className="text-gray-700 hover:text-gray-900 transition-colors duration-200"
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg 
+                         bg-yellow-500 text-white hover:bg-yellow-600 
+                         transition-colors duration-200 shadow-sm"
             >
-              Leaderboard
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path 
+                  fillRule="evenodd" 
+                  d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" 
+                  clipRule="evenodd" 
+                />
+              </svg>
+              <span>Leaderboard</span>
             </Link>
 
-            {/* User stats and avatar dropdown */}
+            {/* User avatar - bez przycisku logout w dropdownie */}
             <div className="relative" ref={dropdownRef}>
               <div 
                 className="flex items-center space-x-3 cursor-pointer group"
@@ -105,7 +119,7 @@ const GameSelect: React.FC = () => {
               {/* Stats dropdown */}
               {showStats && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
-                  {/* User info w dropdownie (widoczne na mobile) */}
+                  {/* User info (mobile) */}
                   <div className="md:hidden px-4 py-2 border-b border-gray-100">
                     <div className="text-sm font-medium text-gray-900">
                       {user?.firstName} {user?.lastName}
@@ -114,11 +128,13 @@ const GameSelect: React.FC = () => {
                       @{user?.username}
                     </div>
                   </div>
-                  
-                  {/* Stats */}
+
+                  {/* Stats header */}
                   <div className="px-4 py-2 border-b border-gray-100">
                     <div className="text-sm font-medium text-gray-700">Statistics</div>
                   </div>
+
+                  {/* Stats grid */}
                   <div className="p-4 grid grid-cols-2 gap-3">
                     <div className="bg-blue-50 p-2 rounded">
                       <div className="text-xs text-gray-500">Total Games</div>
@@ -139,14 +155,27 @@ const GameSelect: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Logout button */}
-                  <div className="px-4 pt-2 border-t border-gray-100">
+                  <div className="px-4 pt-2 mt-2 border-t border-gray-100">
                     <button
                       onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-red-600 
+                               hover:bg-red-50 rounded transition-colors duration-200"
                     >
-                      Logout
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5" 
+                        viewBox="0 0 20 20" 
+                        fill="currentColor"
+                      >
+                        <path 
+                          fillRule="evenodd" 
+                          d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4.414l-4.293 4.293a1 1 0 01-1.414-1.414L11.586 7H7a1 1 0 110-2h6a1 1 0 011 1v6a1 1 0 11-2 0V7.414z" 
+                          clipRule="evenodd" 
+                        />
+                      </svg>
+                      <span>Logout</span>
                     </button>
                   </div>
                 </div>
