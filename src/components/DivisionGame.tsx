@@ -207,8 +207,21 @@ const DivisionGame: React.FC = () => {
     <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
         {/* Header */}
-        <div className="h-[80px] py-4 flex items-center justify-between">
-          <div className="flex items-center">
+        <div className="h-[80px] py-4 flex items-center justify-between relative">
+          {/* Liczniki po lewej */}
+          <div className="flex flex-col items-start space-y-1">
+            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
+              <span className="text-gray-700 font-medium">Time:</span>
+              <span className="ml-2 font-bold text-blue-600">{formatTime(time)}</span>
+            </div>
+            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
+              <span className="text-gray-700 font-medium">Score:</span>
+              <span className="ml-2 font-bold text-green-600">{score}/{questionsAnswered}</span>
+            </div>
+          </div>
+
+          {/* Logo centralnie */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <Link to="/">
               <img 
                 src="/number-ninjas-logo.png"
@@ -218,8 +231,8 @@ const DivisionGame: React.FC = () => {
             </Link>
           </div>
 
-          {/* User menu */}
-          <div className="flex flex-col items-end ml-auto relative">
+          {/* Menu użytkownika po prawej */}
+          <div className="flex flex-col items-end relative">
             <button 
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="focus:outline-none"
@@ -383,27 +396,18 @@ const DivisionGame: React.FC = () => {
                     Submit Answer
                   </button>
                 </form>
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => navigate('/progress')}
-                    className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300"
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Link 
+                    to="/leaderboard"
+                    className="text-center bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
                   >
-                    <BarChart2 className="h-5 w-5" />
-                    <span>View Progress</span>
-                  </button>
-                  <button
-                    onClick={() => navigate('/leaderboard')}
-                    className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
-                  >
-                    <Users className="h-5 w-5" />
-                    <span>Leaderboard</span>
-                  </button>
+                    Ranking
+                  </Link>
                   <button
                     onClick={handleLogout}
-                    className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
+                    className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
                   >
-                    <LogOut className="h-5 w-5" />
-                    <span>Exit to menu</span>
+                    Wyjdź do menu
                   </button>
                 </div>
               </>

@@ -202,10 +202,10 @@ const Game: React.FC = () => {
   return (
     <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
-        {/* Header z logo i avatarem */}
-        <div className="h-[80px] py-4 flex justify-between items-center flex-shrink-0 relative">
-          {/* Ukryj statystyki w headerze na mobile */}
-          <div className="hidden md:flex flex-col items-start space-y-1">
+        {/* Header */}
+        <div className="h-[80px] py-4 flex items-center justify-between relative">
+          {/* Liczniki po lewej */}
+          <div className="flex flex-col items-start space-y-1">
             <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
               <span className="text-gray-700 font-medium">Time:</span>
               <span className="ml-2 font-bold text-blue-600">{formatTime(time)}</span>
@@ -216,17 +216,19 @@ const Game: React.FC = () => {
             </div>
           </div>
 
-          {/* Środek - logo */}
+          {/* Logo centralnie */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <img 
-              src="/number-ninjas-logo.png"
-              alt="Number Ninjas"
-              className="w-24 h-auto"
-            />
+            <Link to="/">
+              <img 
+                src="/number-ninjas-logo.png"
+                alt="Number Ninjas"
+                className="w-24 h-auto"
+              />
+            </Link>
           </div>
 
-          {/* Prawa strona - avatar, imię i menu */}
-          <div className="flex flex-col items-end ml-auto relative">
+          {/* Menu użytkownika po prawej */}
+          <div className="flex flex-col items-end relative">
             <button 
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="focus:outline-none"
@@ -351,93 +353,68 @@ const Game: React.FC = () => {
           </div>
         </div>
 
-        {/* Statystyki na mobile pod headerem */}
-        <div className="md:hidden flex justify-center space-x-4 py-2">
-          <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
-            <span className="text-gray-700 font-medium">Time:</span>
-            <span className="ml-2 font-bold text-blue-600">{formatTime(time)}</span>
-          </div>
-          <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
-            <span className="text-gray-700 font-medium">Score:</span>
-            <span className="ml-2 font-bold text-green-600">{score}/{questionsAnswered}</span>
-          </div>
-        </div>
-
-        {/* Kontener łączący obrazek i interfejs gry */}
-        <div className="h-[calc(100dvh-160px)] flex flex-col">
-          {/* Obrazek multiply */}
-          <div className="h-[20dvh] flex items-center justify-center">
-            <img 
-              src="/multiply.png"
-              alt="Multiply"
-              className="h-full w-auto object-contain"
-            />
-          </div>
-
-          {/* Główna zawartość gry */}
-          <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center">
-              {!isGameStarted ? (
+        {/* Game Content */}
+        <div className="flex-grow flex flex-col items-center justify-center">
+          <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+            <div className="flex justify-center mb-4">
+              <img src="/multiply.png" alt="Multiplication" className="w-16 h-16" />
+            </div>
+            <h2 className="text-2xl font-bold text-center mb-4">Multiplication Ninja</h2>
+            {!isGameStarted ? (
+              <div className="text-center">
+                <p className="mb-4">Trenuj tabliczkę mnożenia!</p>
                 <button
                   onClick={startGame}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold 
-                            shadow-lg hover:bg-blue-700 transition duration-300"
+                  className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
                 >
                   Start Game
                 </button>
-              ) : (
-                <div className="flex flex-col gap-6">
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="text-2xl text-center font-bold">
-                      {num1} x {num2} = ?
-                    </div>
-                    <input
-                      ref={inputRef}
-                      type="number"
-                      value={userAnswer}
-                      onChange={(e) => setUserAnswer(e.target.value)}
-                      className="w-full p-2 border rounded"
-                      placeholder="Enter your answer"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
-                    >
-                      Submit Answer
-                    </button>
-                  </form>
-                  <div className="flex justify-between">
-                    <button
-                      onClick={() => navigate('/progress')}
-                      className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300"
-                    >
-                      <BarChart2 className="h-5 w-5" />
-                      <span>View Progress</span>
-                    </button>
-                    <button
-                      onClick={() => navigate('/leaderboard')}
-                      className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
-                    >
-                      <Users className="h-5 w-5" />
-                      <span>Leaderboard</span>
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
-                    >
-                      <LogOut className="h-5 w-5" />
-                      <span>Wyjdź do menu</span>
-                    </button>
-                  </div>
+              </div>
+            ) : (
+              <>
+                <div className="text-3xl font-bold text-center mb-4">
+                  {num1} × {num2} = ?
                 </div>
-              )}
-            </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <input
+                    ref={inputRef}
+                    type="number"
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    placeholder="Wpisz odpowiedź"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
+                  >
+                    Sprawdź
+                  </button>
+                </form>
+
+                {/* Przyciski nawigacji */}
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Link 
+                    to="/leaderboard"
+                    className="text-center bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
+                  >
+                    Ranking
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
+                  >
+                    Wyjdź do menu
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Footer z logo */}
-        <div className="h-[80px] py-4 text-center flex-shrink-0">
+        {/* Footer */}
+        <div className="h-[80px] py-4 text-center">
           <img 
             src="/MrPrimo-LOGO-sm.png"
             alt="MrPrimo"
