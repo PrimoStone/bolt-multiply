@@ -379,10 +379,20 @@ const Game: React.FC = () => {
         {/* Game Content */}
         <div className="flex-grow flex flex-col items-center justify-center">
           <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-            <div className="flex justify-center mb-4">
-              <img src="/multiply.png" alt="Multiplication" className="w-16 h-16" />
+            {/* Question Display */}
+            <div className="text-center mb-8">
+              <img 
+                src="/multiply.png" 
+                alt="Multiplication" 
+                className="w-48 h-48 mx-auto mb-4"
+              />
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
+                />
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-center mb-4">Multiplication Ninja</h2>
             {!isGameStarted ? (
               <div className="text-center">
                 <p className="mb-4">Practice multiplication tables!</p>
