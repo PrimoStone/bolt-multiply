@@ -155,7 +155,6 @@ const Game: React.FC = () => {
   };
 
   const handleLogout = () => {
-    setUser(null);
     navigate('/');
   };
 
@@ -344,7 +343,7 @@ const Game: React.FC = () => {
                     onClick={handleLogout}
                     className="w-full text-left text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
                   >
-                    Logout
+                    Wyjdź do menu
                   </button>
                 </div>
               </div>
@@ -428,7 +427,7 @@ const Game: React.FC = () => {
                       className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
                     >
                       <LogOut className="h-5 w-5" />
-                      <span>Logout</span>
+                      <span>Wyjdź do menu</span>
                     </button>
                   </div>
                 </div>

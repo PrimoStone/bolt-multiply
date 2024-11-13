@@ -159,7 +159,6 @@ const DivisionGame: React.FC = () => {
   };
 
   const handleLogout = () => {
-    setUser(null);
     navigate('/');
   };
 
@@ -210,14 +209,12 @@ const DivisionGame: React.FC = () => {
         {/* Header */}
         <div className="h-[80px] py-4 flex items-center justify-between">
           <div className="flex items-center">
-            <Link 
-              to="/" 
-              className="mr-4 text-gray-700 hover:text-gray-900 flex items-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Wybór gry
+            <Link to="/">
+              <img 
+                src="/number-ninjas-logo.png"
+                alt="Number Ninjas"
+                className="w-24 h-auto"
+              />
             </Link>
           </div>
 
@@ -339,7 +336,7 @@ const DivisionGame: React.FC = () => {
                     onClick={handleLogout}
                     className="w-full text-left text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
                   >
-                    Logout
+                    Exit to menu
                   </button>
                 </div>
               </div>
@@ -403,7 +400,7 @@ const DivisionGame: React.FC = () => {
                     className="flex flex-col md:flex-row items-center justify-center space-y-1 md:space-y-0 md:space-x-2 bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
                   >
                     <LogOut className="h-5 w-5" />
-                    <span>Logout</span>
+                    <span>Exit to menu</span>
                   </button>
                 </div>
               </>
