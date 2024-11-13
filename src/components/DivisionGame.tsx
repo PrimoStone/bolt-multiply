@@ -109,18 +109,26 @@ const DivisionGame: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const correctAnswer = num1 * num2;
+    const correctAnswer = Math.floor(num1 / num2);
     const isCorrect = parseInt(userAnswer) === correctAnswer;
-    const result = `${num1} x ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
-    setGameHistory([...gameHistory, result]);
+    
+    // Dodaj odpowiedź do historii
+    const newHistoryItem = {
+      question: `${num1} ÷ ${num2}`,
+      userAnswer,
+      correctAnswer: correctAnswer.toString(),
+      isCorrect
+    };
+    setGameHistory([...gameHistory, newHistoryItem]);
+    
+    // Aktualizuj wynik
     if (isCorrect) {
       setScore(score + 1);
     }
+    
     setQuestionsAnswered(questionsAnswered + 1);
 
-    if (questionsAnswered + 1 < TOTAL_QUESTIONS) {
-      generateQuestion();
-    } else {
+    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
       const endTime = new Date();
       const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
@@ -157,9 +165,12 @@ const DivisionGame: React.FC = () => {
           totalQuestions: TOTAL_QUESTIONS, 
           startTime: startTime, 
           endTime: endTime,
-          gameHistory: [...gameHistory, result]
+          gameHistory: [...gameHistory, newHistoryItem]
         } 
       });
+    } else {
+      generateQuestion();
+      setUserAnswer('');
     }
   };
 
@@ -369,10 +380,20 @@ const DivisionGame: React.FC = () => {
         {/* Game Content */}
         <div className="flex-grow flex flex-col items-center justify-center">
           <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-            <div className="flex justify-center mb-4">
-              <img src="/division1.png" alt="Division" className="w-16 h-16" />
+            {/* Question Display */}
+            <div className="text-center mb-8">
+              <img 
+                src="/division1.png" 
+                alt="Division" 
+                className="w-48 h-48 mx-auto mb-4"
+              />
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
+                />
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-center mb-4">Division Ninja</h2>
             {!isGameStarted ? (
               <div className="text-center">
                 <p className="mb-4">Practice division!</p>
