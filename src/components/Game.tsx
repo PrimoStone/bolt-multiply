@@ -6,6 +6,8 @@ import { saveGameStats } from '../firebase/utils';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { convertToBase64 } from '../firebase/utils';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useUserStats } from '../hooks/useUserStats';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -32,12 +34,7 @@ const Game: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [userStats, setUserStats] = useState({
-    totalGames: 0,
-    perfectGames: 0,
-    bestScore: 0,
-    bestTime: 0
-  });
+  const { userStats, refreshStats } = useUserStats(user?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -84,21 +81,8 @@ const Game: React.FC = () => {
   }, [isGameStarted]);
 
   useEffect(() => {
-    const fetchUserStats = async () => {
-      if (user?.id) {
-        // Tutaj dodaj logikę pobierania statystyk z Firebase
-        // Tymczasowo używamy przykładowych danych
-        setUserStats({
-          totalGames: 15,
-          perfectGames: 5,
-          bestScore: 20,
-          bestTime: 45
-        });
-      }
-    };
-
-    fetchUserStats();
-  }, [user]);
+    console.log('Current user stats:', userStats);
+  }, [userStats]);
 
   const generateQuestion = () => {
     setNum1(Math.floor(Math.random() * 11) + 2);
@@ -140,6 +124,9 @@ const Game: React.FC = () => {
           console.error('Błąd podczas zapisywania statystyk:', error);
         }
       }
+
+      // Po zapisie statystyk, odśwież je
+      await refreshStats();
 
       // Przejdź do strony z wynikami
       navigate('/proof', { 
@@ -319,7 +306,9 @@ const Game: React.FC = () => {
                     </div>
                     <div className="bg-orange-50 p-2 rounded">
                       <div className="text-xs text-gray-500">Best Time</div>
-                      <div className="text-lg font-bold text-orange-600">{formatTime(userStats.bestTime)}</div>
+                      <div className="text-lg font-bold text-orange-600">
+                        {userStats.bestTime ? `${userStats.bestTime}s` : '-'}
+                      </div>
                     </div>
                   </div>
                 </div>

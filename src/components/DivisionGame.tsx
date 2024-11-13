@@ -6,6 +6,7 @@ import { saveGameStats } from '../firebase/utils';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { convertToBase64 } from '../firebase/utils';
+import { useUserStats } from '../hooks/useUserStats';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -32,12 +33,7 @@ const DivisionGame: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [userStats, setUserStats] = useState({
-    totalGames: 0,
-    perfectGames: 0,
-    bestScore: 0,
-    bestTime: 0
-  });
+  const { userStats, refreshStats } = useUserStats(user?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -83,23 +79,6 @@ const DivisionGame: React.FC = () => {
     };
   }, [isGameStarted]);
 
-  useEffect(() => {
-    const fetchUserStats = async () => {
-      if (user?.id) {
-        // Tutaj dodaj logikę pobierania statystyk z Firebase
-        // Tymczasowo używamy przykładowych danych
-        setUserStats({
-          totalGames: 15,
-          perfectGames: 5,
-          bestScore: 20,
-          bestTime: 45
-        });
-      }
-    };
-
-    fetchUserStats();
-  }, [user]);
-
   const generateQuestion = () => {
     let num2 = Math.floor(Math.random() * 9) + 1;
     let correctAnswer = Math.floor(Math.random() * 10) + 1;
@@ -144,6 +123,9 @@ const DivisionGame: React.FC = () => {
           console.error('Błąd podczas zapisywania statystyk:', error);
         }
       }
+
+      // Po zapisie odśwież statystyki
+      await refreshStats();
 
       // Przejdź do strony z wynikami
       navigate('/proof', { 
