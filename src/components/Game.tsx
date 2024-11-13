@@ -211,6 +211,23 @@ const Game: React.FC = () => {
     fileInputRef.current?.click();
   };
 
+  const renderAvatar = () => {
+    if (user?.photoURL) {
+      return (
+        <img
+          src={user.photoURL}
+          alt="Profile"
+          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+        />
+      );
+    }
+    return (
+      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-sm">
+        {getInitials(user?.firstName, user?.lastName)}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
@@ -246,20 +263,8 @@ const Game: React.FC = () => {
                 className="flex items-center space-x-3 cursor-pointer group"
                 onClick={() => setShowStats(!showStats)}
               >
-                {user?.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt="User avatar"
-                    className="w-12 h-12 rounded-full object-cover shadow-md hover:ring-2 hover:ring-blue-400 transition-all"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-md hover:ring-2 hover:ring-blue-400 transition-all">
-                    {getInitials(user?.firstName, user?.lastName)}
-                  </div>
-                )}
-                <div>
-                  <div className="font-medium">{user?.firstName} {user?.lastName}</div>
-                  <div className="text-sm text-gray-500">@{user?.username}</div>
+                <div className="flex items-center">
+                  {renderAvatar()}
                 </div>
               </div>
 
