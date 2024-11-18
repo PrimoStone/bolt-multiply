@@ -382,7 +382,7 @@ const Game: React.FC = () => {
             {/* Question Display */}
             <div className="text-center mb-8">
               <img 
-                src="/multiply.png" 
+                src="/multiplication.png" 
                 alt="Multiplication" 
                 className="w-48 h-48 mx-auto mb-4"
               />

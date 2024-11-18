@@ -165,49 +165,51 @@ const Subtraction: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="flex justify-between items-center mb-8">
-              <div className="text-gray-600">
-                Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}
+          <div className="flex-grow flex flex-col items-center justify-center">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+              <div className="flex justify-between items-center mb-4 text-sm text-gray-600">
+                <div>Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}</div>
+                <div>Score: {score}</div>
+                <div>Time: {formatTime(time)}</div>
               </div>
-              <div className="text-gray-600">
-                Score: {score}
-              </div>
-              <div className="text-gray-600">
-                Time: {formatTime(time)}
-              </div>
-            </div>
 
-            <div className="text-center mb-8">
-              <img 
-                src="/subtraction.png" 
-                alt="Subtraction" 
-                className="w-48 h-48 object-contain mx-auto mb-6"
-              />
-              <div className="text-6xl font-bold text-gray-800 mb-4">
-                {num1} - {num2} = ?
+              <div className="text-center mb-8">
+                <img 
+                  src="/subtraction.png" 
+                  alt="Subtraction" 
+                  className="w-48 h-48 mx-auto mb-4"
+                />
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
+                  />
+                </div>
+                <div className="text-6xl font-bold text-gray-800 mt-6 mb-8">
+                  {num1} - {num2} = ?
+                </div>
               </div>
-            </div>
 
-            <form onSubmit={handleSubmit} className="max-w-sm mx-auto">
-              <input
-                ref={inputRef}
-                type="number"
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                className="w-full text-center text-4xl font-bold py-4 border-2 border-gray-300 rounded-lg
-                         focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                placeholder="Your answer"
-                autoFocus
-              />
-              <button
-                type="submit"
-                className="w-full mt-4 bg-blue-500 text-white py-4 rounded-lg text-xl font-semibold
-                         hover:bg-blue-600 transition-colors duration-200"
-              >
-                Submit
-              </button>
-            </form>
+              <form onSubmit={handleSubmit} className="w-full">
+                <input
+                  ref={inputRef}
+                  type="number"
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  className="w-full text-center text-4xl font-bold py-4 border-2 border-gray-300 rounded-lg
+                           focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                  placeholder="Your answer"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="w-full mt-4 bg-blue-500 text-white py-4 rounded-lg text-xl font-semibold
+                           hover:bg-blue-600 transition-colors duration-200"
+                >
+                  Submit
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </div>
