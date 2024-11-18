@@ -224,98 +224,144 @@ const Addition: React.FC = () => {
           </div>
 
           {/* Right side user menu */}
-          <div className="relative" ref={dropdownRef}>
-            <div 
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="cursor-pointer"
-            >
-              {renderAvatar()}
-            </div>
+          <div className="flex items-center space-x-6">
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center space-x-2"
+              >
+                {renderAvatar()}
+              </button>
 
-            {isUserMenuOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
-                {/* User Profile */}
-                <div className="px-4 py-3 border-b">
-                  <div className="flex items-center space-x-3">
-                    <div 
-                      className="relative group cursor-pointer"
-                      onClick={() => fileInputRef.current?.click()}
-                      role="button"
-                      tabIndex={0}
-                      aria-label="Change profile picture"
-                    >
-                      {user?.photoURL ? (
-                        <img
-                          src={user.photoURL}
-                          alt="Profile"
-                          className="w-16 h-16 rounded-full object-cover 
-                                   group-hover:opacity-80 transition-all duration-200"
-                        />
-                      ) : (
-                        <div 
-                          className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center 
-                                   text-white font-bold group-hover:bg-blue-600 transition-all duration-200"
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
+                  <div className="px-4 py-3 border-b">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative group">
+                        {user?.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt="Profile"
+                            className="w-16 h-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                            {getInitials(user?.firstName, user?.lastName)}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
+                        <div className="text-sm text-gray-500">{user?.username}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {userStats && (
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="text-sm font-medium text-gray-700">Statistics</div>
+                        <Link 
+                          to="/profile"
+                          className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                          onClick={() => setIsUserMenuOpen(false)}
                         >
-                          {getInitials(user?.firstName, user?.lastName)}
+                          <span>View Full Stats</span>
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className="h-4 w-4 ml-1" 
+                            viewBox="0 0 20 20" 
+                            fill="currentColor"
+                          >
+                            <path 
+                              fillRule="evenodd" 
+                              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" 
+                              clipRule="evenodd" 
+                            />
+                          </svg>
+                        </Link>
+                      </div>
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Addition Stats */}
+                        <div className="bg-blue-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Addition Games</div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {userStats.stats?.addition?.totalGames || 0}
+                          </div>
                         </div>
-                      )}
-                      <div className="absolute inset-0 flex items-center justify-center 
-                                    bg-black bg-opacity-0 group-hover:bg-opacity-30 
-                                    rounded-full transition-all duration-200">
-                        <Users className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                        <div className="bg-blue-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {userStats.stats?.addition?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Subtraction Stats */}
+                        <div className="bg-green-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Subtraction Games</div>
+                          <div className="text-lg font-bold text-green-600">
+                            {userStats.stats?.subtraction?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-green-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-green-600">
+                            {userStats.stats?.subtraction?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Multiplication Stats */}
+                        <div className="bg-purple-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Multiplication Games</div>
+                          <div className="text-lg font-bold text-purple-600">
+                            {userStats.stats?.multiplication?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-purple-600">
+                            {userStats.stats?.multiplication?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Division Stats */}
+                        <div className="bg-orange-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Division Games</div>
+                          <div className="text-lg font-bold text-orange-600">
+                            {userStats.stats?.division?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-orange-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-orange-600">
+                            {userStats.stats?.division?.bestTime || '-'}s
+                          </div>
+                        </div>
                       </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handlePhotoChange}
-                      />
                     </div>
-                    <div>
-                      <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
-                      <div className="text-sm text-gray-500">@{user?.username}</div>
-                    </div>
+                  )}
+
+                  <div className="px-4 py-2">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center space-x-2 text-red-600 hover:text-red-700"
+                    >
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5" 
+                        viewBox="0 0 20 20" 
+                        fill="currentColor"
+                      >
+                        <path 
+                          fillRule="evenodd" 
+                          d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" 
+                          clipRule="evenodd" 
+                        />
+                      </svg>
+                      <span>Logout</span>
+                    </button>
                   </div>
                 </div>
-
-                {/* Stats */}
-                {userStats && (
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Game Stats</div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Addition:</span>
-                        <span className="text-sm font-medium text-gray-900">{userStats.stats.addition.totalGames} games • {userStats.stats.addition.bestTime || '-'}s best</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Subtraction:</span>
-                        <span className="text-sm font-medium text-gray-900">{userStats.stats.subtraction.totalGames} games • {userStats.stats.subtraction.bestTime || '-'}s best</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Multiplication:</span>
-                        <span className="text-sm font-medium text-gray-900">{userStats.stats.multiplication.totalGames} games • {userStats.stats.multiplication.bestTime || '-'}s best</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Division:</span>
-                        <span className="text-sm font-medium text-gray-900">{userStats.stats.division.totalGames} games • {userStats.stats.division.bestTime || '-'}s best</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Logout Button */}
-                <div className="px-4 py-2">
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-2 text-red-600 hover:bg-red-50 w-full px-2 py-1 rounded transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Exit to Menu</span>
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
