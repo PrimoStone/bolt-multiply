@@ -113,6 +113,10 @@ const Game: React.FC = () => {
     const correctAnswer = num1 * num2;
     const isCorrect = parseInt(userAnswer) === correctAnswer;
     
+    // Update game history
+    const historyEntry = `${num1} × ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect, answer was ' + correctAnswer})`;
+    setGameHistory([...gameHistory, historyEntry]);
+    
     if (isCorrect) {
       setScore(score + 1);
     }
@@ -143,7 +147,6 @@ const Game: React.FC = () => {
           );
           console.log('Game stats saved successfully');
           
-          // Odśwież statystyki po zapisie
           await refreshStats();
           console.log('Stats refreshed');
         } catch (error) {
@@ -155,9 +158,10 @@ const Game: React.FC = () => {
         state: { 
           score: finalScore, 
           totalQuestions: TOTAL_QUESTIONS,
-          startTime: startTime,
-          endTime: endTime,
-          gameHistory: gameHistory
+          startTime: startTime.getTime(),
+          endTime: endTime.getTime(),
+          gameHistory: [...gameHistory, historyEntry],
+          gameType: 'multiplication'
         } 
       });
     } else {
@@ -404,7 +408,7 @@ const Game: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <>
+              <div>
                 <div className="text-3xl font-bold text-center mb-4">
                   {num1} × {num2} = ?
                 </div>
@@ -440,7 +444,7 @@ const Game: React.FC = () => {
                     Exit to Menu
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

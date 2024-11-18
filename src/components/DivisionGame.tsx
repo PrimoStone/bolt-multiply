@@ -128,7 +128,7 @@ const DivisionGame: React.FC = () => {
 
     const correctAnswer = num1 / num2;
     const isCorrect = parseFloat(userAnswer) === correctAnswer;
-    const historyEntry = `${num1} ÷ ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
+    const historyEntry = `${num1} ÷ ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect, answer was ' + correctAnswer})`;
     const newHistory = [...gameHistory, historyEntry];
     setGameHistory(newHistory);
 
