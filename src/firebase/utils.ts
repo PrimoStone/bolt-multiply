@@ -148,27 +148,6 @@ export const saveGameProgress = async (userId: string, gameData: {
   }
 };
 
-export const getUserStats = async (userId: string) => {
-  try {
-    const q = query(collection(db, 'games'), where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Błąd podczas pobierania statystyk:', error);
-    return [];
-  }
-};
-
-interface GameStats {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  score: number;
-  timeSpent: number;
-  timestamp: Date;
-}
-
 import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './config';
 import { GameType, GameStats, UserGameStats, Achievement } from '../types/stats';
