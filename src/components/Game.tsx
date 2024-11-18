@@ -237,11 +237,11 @@ const Game: React.FC = () => {
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
         {/* Header */}
         <div className="h-[80px] py-4 flex items-center justify-between relative">
-          {/* Liczniki po lewej */}
+          {/* Left side counters */}
           <div className="flex flex-col items-start space-y-1">
             <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
               <span className="text-gray-700 font-medium">Time:</span>
-              <span className="ml-2 font-bold text-blue-600">{formatTime(time)}</span>
+              <span className="ml-2 font-bold text-blue-600">{Math.floor(time / 60)}:{(time % 60).toString().padStart(2, '0')}</span>
             </div>
             <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
               <span className="text-gray-700 font-medium">Score:</span>
@@ -249,7 +249,7 @@ const Game: React.FC = () => {
             </div>
           </div>
 
-          {/* Logo centralnie */}
+          {/* Centered logo */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <Link to="/">
               <img 
@@ -260,118 +260,140 @@ const Game: React.FC = () => {
             </Link>
           </div>
 
-          {/* Menu użytkownika po prawej */}
-          <div className="flex flex-col items-end relative">
+          {/* Right side user menu */}
+          <div className="flex items-center space-x-6">
             <div className="relative" ref={dropdownRef}>
-              <div 
-                className="flex items-center space-x-3 cursor-pointer group"
-                onClick={() => setShowStats(!showStats)}
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center space-x-2"
               >
-                <div className="flex items-center">
-                  {renderAvatar()}
-                </div>
-              </div>
+                {renderAvatar()}
+              </button>
 
-              {showStats && (
+              {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
-                  {/* Profil użytkownika */}
                   <div className="px-4 py-3 border-b">
                     <div className="flex items-center space-x-3">
-                      {/* Avatar z możliwością zmiany */}
-                      <div 
-                        className="relative group cursor-pointer"
-                        onClick={handleAvatarClick}
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Zmień zdjęcie profilowe"
-                      >
+                      <div className="relative group">
                         {user?.photoURL ? (
                           <img
                             src={user.photoURL}
                             alt="Profile"
-                            className="w-16 h-16 rounded-full object-cover 
-                                     group-hover:opacity-80 transition-all duration-200"
+                            className="w-16 h-16 rounded-full object-cover"
                           />
                         ) : (
-                          <div 
-                            className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center 
-                                     text-white font-bold group-hover:bg-blue-600 transition-all duration-200"
-                          >
+                          <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
                             {getInitials(user?.firstName, user?.lastName)}
                           </div>
                         )}
-                        {/* Overlay z tekstem */}
-                        <div className="absolute inset-0 flex items-center justify-center 
-                                      bg-black bg-opacity-0 group-hover:bg-opacity-30 
-                                      rounded-full transition-all duration-200">
-                          <div className="text-white text-xs font-medium opacity-0 
-                                        group-hover:opacity-100 transition-all duration-200 
-                                        px-2 py-1 bg-black bg-opacity-50 rounded-lg">
-                            Zmień zdjęcie
-                          </div>
-                        </div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handlePhotoChange}
-                        />
                       </div>
                       <div>
-                        <div className="font-medium">{user?.firstName} {user?.lastName}</div>
-                        <div className="text-sm text-gray-500">@{user?.username}</div>
+                        <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
+                        <div className="text-sm text-gray-500">{user?.username}</div>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Statystyki użytkownika */}
-                  <div className="px-4 py-3 border-b">
-                    <div className="text-sm font-medium text-gray-700 mb-2">Statistics</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-blue-50 p-2 rounded">
-                        <div className="text-xs text-gray-500">Total Games</div>
-                        <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
+
+                  {userStats && (
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="text-sm font-medium text-gray-700">Statistics</div>
+                        <Link 
+                          to="/profile"
+                          className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <span>View Full Stats</span>
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className="h-4 w-4 ml-1" 
+                            viewBox="0 0 20 20" 
+                            fill="currentColor"
+                          >
+                            <path 
+                              fillRule="evenodd" 
+                              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" 
+                              clipRule="evenodd" 
+                            />
+                          </svg>
+                        </Link>
                       </div>
-                      <div className="bg-green-50 p-2 rounded">
-                        <div className="text-xs text-gray-500">Perfect Games</div>
-                        <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
-                      </div>
-                      <div className="bg-purple-50 p-2 rounded">
-                        <div className="text-xs text-gray-500">Best Score</div>
-                        <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
-                      </div>
-                      <div className="bg-orange-50 p-2 rounded">
-                        <div className="text-xs text-gray-500">Best Time</div>
-                        <div className="text-lg font-bold text-orange-600">
-                          {userStats.bestTime ? `${userStats.bestTime}s` : '-'}
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Addition Stats */}
+                        <div className="bg-blue-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Addition Games</div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {userStats.stats?.addition?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {userStats.stats?.addition?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Subtraction Stats */}
+                        <div className="bg-green-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Subtraction Games</div>
+                          <div className="text-lg font-bold text-green-600">
+                            {userStats.stats?.subtraction?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-green-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-green-600">
+                            {userStats.stats?.subtraction?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Multiplication Stats */}
+                        <div className="bg-purple-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Multiplication Games</div>
+                          <div className="text-lg font-bold text-purple-600">
+                            {userStats.stats?.multiplication?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-purple-600">
+                            {userStats.stats?.multiplication?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Division Stats */}
+                        <div className="bg-orange-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Division Games</div>
+                          <div className="text-lg font-bold text-orange-600">
+                            {userStats.stats?.division?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-orange-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-orange-600">
+                            {userStats.stats?.division?.bestTime || '-'}s
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Dane użytkownika */}
-                  <div className="px-4 py-2 border-b">
-                    <div className="text-sm text-gray-600">
-                      <div className="mb-2">
-                        <span className="font-medium">Username:</span> {user?.username}
-                      </div>
-                      <div className="mb-2">
-                        <span className="font-medium">First Name:</span> {user?.firstName}
-                      </div>
-                      <div className="mb-2">
-                        <span className="font-medium">Last Name:</span> {user?.lastName}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Przycisk wylogowania */}
                   <div className="px-4 py-2">
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                      className="flex items-center space-x-2 text-red-600 hover:text-red-700"
                     >
-                      Wyjdź do menu
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-5 w-5" 
+                        viewBox="0 0 20 20" 
+                        fill="currentColor"
+                      >
+                        <path 
+                          fillRule="evenodd" 
+                          d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" 
+                          clipRule="evenodd" 
+                        />
+                      </svg>
+                      <span>Logout</span>
                     </button>
                   </div>
                 </div>
@@ -380,82 +402,68 @@ const Game: React.FC = () => {
           </div>
         </div>
 
-        {/* Game Content */}
-        <div className="flex-grow flex flex-col items-center justify-center">
-          <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-            {/* Question Display */}
-            <div className="text-center mb-8">
+        {/* Main content */}
+        <div className="flex-1 flex items-center justify-center">
+          {!isGameStarted ? (
+            <div className="text-center">
               <img 
                 src="/multiplication.png" 
                 alt="Multiplication" 
-                className="w-48 h-48 mx-auto mb-4"
+                className="w-32 h-32 mx-auto mb-8"
               />
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
-                />
+              <h1 className="text-4xl font-bold text-gray-800 mb-8">Multiplication Challenge</h1>
+              <button
+                onClick={startGame}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg
+                         hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+              >
+                <PlayIcon className="w-6 h-6" />
+                <span>Start Game</span>
+              </button>
+            </div>
+          ) : (
+            <div className="w-full max-w-md">
+              <div className="bg-white rounded-2xl shadow-xl p-8">
+                <div className="text-center">
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
+                    />
+                  </div>
+                  <div className="mb-8">
+                    <img 
+                      src="/multiplication.png" 
+                      alt="Multiplication" 
+                      className="w-32 h-32 mx-auto"
+                    />
+                  </div>
+                  <div className="text-6xl font-bold text-gray-800 mb-4">
+                    {num1} × {num2}
+                  </div>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <input
+                      type="number"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      className="w-full text-center text-4xl font-bold py-3 border-2 border-gray-300 rounded-lg
+                               focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                      placeholder="Your answer"
+                      ref={inputRef}
+                    />
+                    <button
+                      type="submit"
+                      className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold
+                               hover:bg-green-700 transition-colors duration-200"
+                    >
+                      Submit Answer
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
-            {!isGameStarted ? (
-              <div className="text-center">
-                <p className="mb-4">Practice multiplication tables!</p>
-                <button
-                  onClick={startGame}
-                  className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
-                >
-                  Start Game
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="text-3xl font-bold text-center mb-4">
-                  {num1} × {num2} = ?
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input
-                    ref={inputRef}
-                    type="number"
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    placeholder="Enter your answer"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
-                  >
-                    Check
-                  </button>
-                </form>
-
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Link 
-                    to="/leaderboard"
-                    className="text-center bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
-                  >
-                    Leaderboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
-                  >
-                    Exit to Menu
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="h-[80px] py-4 text-center">
-          <img 
-            src="/MrPrimo-LOGO-sm.png"
-            alt="MrPrimo"
-            className="w-16 h-auto mx-auto opacity-80 hover:opacity-100 transition-opacity"
-          />
+          )}
         </div>
       </div>
     </div>

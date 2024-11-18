@@ -102,63 +102,125 @@ const GameSelect: React.FC = () => {
               <span>Leaderboard</span>
             </Link>
 
-            {/* User avatar */}
+            {/* User menu */}
             <div className="relative" ref={dropdownRef}>
-              <div 
-                className="flex items-center space-x-3 cursor-pointer group"
+              <button
                 onClick={() => setShowStats(!showStats)}
+                className="flex items-center space-x-2"
               >
-                <div className="flex items-center">
-                  {renderAvatar()}
-                </div>
-              </div>
+                {renderAvatar()}
+              </button>
 
-              {/* Stats dropdown */}
               {showStats && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
-                  {/* User info (mobile) */}
-                  <div className="md:hidden px-4 py-2 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user?.firstName} {user?.lastName}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      @{user?.username}
-                    </div>
-                  </div>
-
-                  {/* Stats header */}
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <div className="text-sm font-medium text-gray-700">Statistics</div>
-                  </div>
-
-                  {/* Stats grid */}
-                  <div className="p-4 grid grid-cols-2 gap-3">
-                    <div className="bg-blue-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Total Games</div>
-                      <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
-                    </div>
-                    <div className="bg-green-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Perfect Games</div>
-                      <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
-                    </div>
-                    <div className="bg-purple-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Best Score</div>
-                      <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
-                    </div>
-                    <div className="bg-orange-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Best Time</div>
-                      <div className="text-lg font-bold text-orange-600">
-                        {userStats.bestTime ? `${userStats.bestTime}s` : '-'}
+                  <div className="px-4 py-3 border-b">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative group">
+                        {user?.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt="Profile"
+                            className="w-16 h-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                            {getInitials(user?.firstName, user?.lastName)}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
+                        <div className="text-sm text-gray-500">{user?.username}</div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Logout button */}
-                  <div className="px-4 pt-2 mt-2 border-t border-gray-100">
+                  {userStats && (
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="text-sm font-medium text-gray-700">Statistics</div>
+                        <Link 
+                          to="/profile"
+                          className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                          onClick={() => setShowStats(false)}
+                        >
+                          <span>View Full Stats</span>
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className="h-4 w-4 ml-1" 
+                            viewBox="0 0 20 20" 
+                            fill="currentColor"
+                          >
+                            <path 
+                              fillRule="evenodd" 
+                              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" 
+                              clipRule="evenodd" 
+                            />
+                          </svg>
+                        </Link>
+                      </div>
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Addition Stats */}
+                        <div className="bg-blue-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Addition Games</div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {userStats.stats?.addition?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {userStats.stats?.addition?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Subtraction Stats */}
+                        <div className="bg-green-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Subtraction Games</div>
+                          <div className="text-lg font-bold text-green-600">
+                            {userStats.stats?.subtraction?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-green-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-green-600">
+                            {userStats.stats?.subtraction?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Multiplication Stats */}
+                        <div className="bg-purple-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Multiplication Games</div>
+                          <div className="text-lg font-bold text-purple-600">
+                            {userStats.stats?.multiplication?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-purple-600">
+                            {userStats.stats?.multiplication?.bestTime || '-'}s
+                          </div>
+                        </div>
+                        {/* Division Stats */}
+                        <div className="bg-orange-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Division Games</div>
+                          <div className="text-lg font-bold text-orange-600">
+                            {userStats.stats?.division?.totalGames || 0}
+                          </div>
+                        </div>
+                        <div className="bg-orange-50 p-2 rounded">
+                          <div className="text-xs text-gray-500">Best Time</div>
+                          <div className="text-lg font-bold text-orange-600">
+                            {userStats.stats?.division?.bestTime || '-'}s
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="px-4 py-2">
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center space-x-2 px-4 py-2 text-red-600 
-                               hover:bg-red-50 rounded transition-colors duration-200"
+                      className="flex items-center space-x-2 text-red-600 hover:text-red-700"
                     >
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
@@ -168,7 +230,7 @@ const GameSelect: React.FC = () => {
                       >
                         <path 
                           fillRule="evenodd" 
-                          d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4.414l-4.293 4.293a1 1 0 01-1.414-1.414L11.586 7H7a1 1 0 110-2h6a1 1 0 011 1v6a1 1 0 11-2 0V7.414z" 
+                          d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" 
                           clipRule="evenodd" 
                         />
                       </svg>
@@ -222,7 +284,7 @@ const GameSelect: React.FC = () => {
 
             {/* Multiplication Game */}
             <Link 
-              to="/game" 
+              to="/multiplication" 
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
                        overflow-hidden group"
             >
