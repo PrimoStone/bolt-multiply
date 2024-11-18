@@ -11,6 +11,10 @@ import { useUserStats } from '../hooks/useUserStats';
 
 const TOTAL_QUESTIONS = 20;
 
+const getInitials = (firstName: string = '', lastName: string = '') => {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
 const Addition: React.FC = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
@@ -29,6 +33,7 @@ const Addition: React.FC = () => {
   const { userStats, refreshStats } = useUserStats(user?.id);
   const [showStats, setShowStats] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -127,6 +132,50 @@ const Addition: React.FC = () => {
     setTime(0);
   };
 
+  const renderAvatar = () => {
+    if (user?.photoURL) {
+      return (
+        <img
+          src={user.photoURL}
+          alt="Profile"
+          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+        />
+      );
+    }
+    return (
+      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-sm">
+        {getInitials(user?.firstName, user?.lastName)}
+      </div>
+    );
+  };
+
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    try {
+      const base64String = await convertToBase64(file);
+      
+      const userDocRef = doc(db, 'users', user.id);
+      await updateDoc(userDocRef, {
+        photoURL: base64String
+      });
+
+      setUser({
+        ...user,
+        photoURL: base64String
+      });
+
+    } catch (error) {
+      console.error('Error updating photo:', error);
+      alert('Failed to update profile photo');
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
   if (!user) return null;
 
   return (
@@ -137,6 +186,79 @@ const Addition: React.FC = () => {
             <ArrowLeft className="w-6 h-6 mr-2" />
             Back to Games
           </Link>
+          
+          {/* User Avatar and Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center space-x-2 focus:outline-none"
+            >
+              {renderAvatar()}
+              <div className="hidden md:block text-left">
+                <div className="text-sm font-medium text-gray-700">{user?.firstName} {user?.lastName}</div>
+                <div className="text-xs text-gray-500">@{user?.username}</div>
+              </div>
+            </button>
+
+            {isUserMenuOpen && (
+              <div
+                ref={dropdownRef}
+                className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg py-2 z-50"
+              >
+                <div className="px-4 py-3 border-b">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                      {renderAvatar()}
+                      <div className="absolute inset-0 flex items-center justify-center 
+                                    bg-black bg-opacity-0 group-hover:bg-opacity-30 
+                                    rounded-full transition-all duration-200">
+                        <div className="text-white text-xs font-medium opacity-0 
+                                      group-hover:opacity-100 transition-all duration-200 
+                                      px-2 py-1 bg-black bg-opacity-50 rounded-lg">
+                          Change photo
+                        </div>
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoChange}
+                      />
+                    </div>
+                    <div>
+                      <div className="font-medium">{user?.firstName} {user?.lastName}</div>
+                      <div className="text-sm text-gray-500">@{user?.username}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-4 py-3 border-b">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Statistics</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">Total Games</div>
+                      <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">Perfect Games</div>
+                      <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
+                    </div>
+                    <div className="bg-purple-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">Best Score</div>
+                      <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
+                    </div>
+                    <div className="bg-orange-50 p-2 rounded">
+                      <div className="text-xs text-gray-500">Best Time</div>
+                      <div className="text-lg font-bold text-orange-600">
+                        {userStats.bestTime ? formatTime(userStats.bestTime) : '--:--'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {!isGameStarted ? (
