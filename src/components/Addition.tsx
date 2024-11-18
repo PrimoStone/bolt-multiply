@@ -2,12 +2,10 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
-import { saveGameStats } from '../firebase/utils';
-import { doc, updateDoc } from 'firebase/firestore';
+import { convertToBase64 } from '../utils/imageUtils';
+import { saveGameStats, getUserStats } from '../firebase/utils';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { convertToBase64 } from '../firebase/utils';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { useUserStats } from '../hooks/useUserStats';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -30,107 +28,9 @@ const Addition: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { userStats, refreshStats } = useUserStats(user?.id);
-  const [showStats, setShowStats] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/');
-    } else {
-      generateQuestion();
-      setStartTime(new Date());
-    }
-  }, [user, navigate]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [num1, num2]);
-
-  useEffect(() => {
-    if (isGameStarted) {
-      timerRef.current = setInterval(() => {
-        setTime(prev => prev + 1);
-      }, 1000);
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [isGameStarted]);
-
-  const generateQuestion = () => {
-    setNum1(Math.floor(Math.random() * 13));  // Numbers from 0 to 12
-    setNum2(Math.floor(Math.random() * 13));  // Numbers from 0 to 12
-    setUserAnswer('');
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const correctAnswer = num1 + num2;
-    const isCorrect = parseInt(userAnswer) === correctAnswer;
-    
-    // Update game history
-    const historyEntry = `${num1} + ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect, answer was ' + correctAnswer})`;
-    setGameHistory([...gameHistory, historyEntry]);
-    
-    if (isCorrect) {
-      setScore(score + 1);
-    }
-    
-    setQuestionsAnswered(questionsAnswered + 1);
-
-    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
-      const endTime = new Date();
-      const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-      const finalScore = score + (isCorrect ? 1 : 0);
-
-      if (user) {
-        try {
-          await saveGameStats(
-            user.id,
-            user.username,
-            user.firstName,
-            user.lastName,
-            finalScore,
-            timeSpent,
-            finalScore === TOTAL_QUESTIONS
-          );
-          await refreshStats();
-        } catch (error) {
-          console.error('Error saving game stats:', error);
-        }
-      }
-
-      navigate('/proof', { 
-        state: { 
-          score: finalScore,
-          totalQuestions: TOTAL_QUESTIONS,
-          startTime: startTime.getTime(),
-          endTime: endTime.getTime(),
-          gameHistory: [...gameHistory, historyEntry],
-          gameType: 'addition'
-        } 
-      });
-    } else {
-      generateQuestion();
-      setUserAnswer('');
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const startGame = () => {
-    setIsGameStarted(true);
-    setTime(0);
-  };
+  const [userStats, setUserStats] = useState<any>(null);
 
   const renderAvatar = () => {
     if (user?.photoURL) {
@@ -149,74 +49,220 @@ const Addition: React.FC = () => {
     );
   };
 
-  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user?.id) return;
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+    } else {
+      generateQuestion();
+      setStartTime(new Date());
+      // Load user stats
+      loadUserStats();
+    }
+  }, [user, navigate]);
 
-    try {
-      const base64String = await convertToBase64(file);
-      
-      const userDocRef = doc(db, 'users', user.id);
-      await updateDoc(userDocRef, {
-        photoURL: base64String
-      });
-
-      setUser({
-        ...user,
-        photoURL: base64String
-      });
-
-    } catch (error) {
-      console.error('Error updating photo:', error);
-      alert('Failed to update profile photo');
+  const loadUserStats = async () => {
+    if (user) {
+      try {
+        const stats = await getUserStats(user.id);
+        setUserStats(stats);
+      } catch (error) {
+        console.error('Error loading user stats:', error);
+      }
     }
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [num1, num2]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const startGame = () => {
+    setIsGameStarted(true);
+    setStartTime(new Date());
+    generateQuestion();
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTime(prev => prev + 1);
+    }, 1000);
   };
 
-  if (!user) return null;
+  const generateQuestion = () => {
+    const newNum1 = Math.floor(Math.random() * 10) + 1;
+    const newNum2 = Math.floor(Math.random() * 10) + 1;
+    setNum1(newNum1);
+    setNum2(newNum2);
+    setUserAnswer('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctAnswer = num1 + num2;
+    const isCorrect = parseInt(userAnswer) === correctAnswer;
+    
+    const historyEntry = `${num1} + ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
+    setGameHistory([...gameHistory, historyEntry]);
+    
+    if (isCorrect) {
+      setScore(score + 1);
+    }
+    
+    setQuestionsAnswered(questionsAnswered + 1);
+
+    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
+      const endTime = new Date();
+      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      const finalScore = score + (isCorrect ? 1 : 0);
+
+      // Save game stats before navigating
+      if (user) {
+        await saveGameStats(
+          user.id,
+          user.username,
+          user.firstName,
+          user.lastName,
+          finalScore,
+          duration,
+          finalScore === TOTAL_QUESTIONS,
+          'addition'
+        );
+      }
+
+      navigate('/proof', { 
+        state: { 
+          score: finalScore, 
+          total: TOTAL_QUESTIONS,
+          time: duration,
+          history: [...gameHistory, historyEntry],
+          gameType: 'addition'
+        } 
+      });
+      return;
+    }
+
+    generateQuestion();
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    navigate('/');
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const base64 = await convertToBase64(file);
+        if (user) {
+          const userRef = doc(db, 'users', user.id);
+          await updateDoc(userRef, {
+            photoURL: base64
+          });
+          setUser({ ...user, photoURL: base64 });
+        }
+      } catch (error) {
+        console.error('Error uploading profile picture:', error);
+      }
+    }
+  };
+
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const base64 = await convertToBase64(file);
+        if (user) {
+          const userRef = doc(db, 'users', user.id);
+          await updateDoc(userRef, {
+            photoURL: base64
+          });
+          setUser({ ...user, photoURL: base64 });
+        }
+      } catch (error) {
+        console.error('Error uploading profile picture:', error);
+      }
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-100 to-orange-200 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8 flex justify-between items-center">
-          <Link to="/gameselect" className="text-gray-600 hover:text-gray-800 flex items-center">
-            <ArrowLeft className="w-6 h-6 mr-2" />
-            Back to Games
-          </Link>
-          
-          {/* User Avatar and Menu */}
-          <div className="relative">
-            <button
+    <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
+      <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
+        {/* Header */}
+        <div className="h-[80px] py-4 flex items-center justify-between relative">
+          {/* Left side counters */}
+          <div className="flex flex-col items-start space-y-1">
+            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
+              <span className="text-gray-700 font-medium">Time:</span>
+              <span className="ml-2 font-bold text-blue-600">{Math.floor(time / 60)}:{(time % 60).toString().padStart(2, '0')}</span>
+            </div>
+            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
+              <span className="text-gray-700 font-medium">Score:</span>
+              <span className="ml-2 font-bold text-green-600">{score}/{questionsAnswered}</span>
+            </div>
+          </div>
+
+          {/* Centered logo */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Link to="/">
+              <img 
+                src="/number-ninjas-logo.png"
+                alt="Number Ninjas"
+                className="w-24 h-auto"
+              />
+            </Link>
+          </div>
+
+          {/* Right side user menu */}
+          <div className="relative" ref={dropdownRef}>
+            <div 
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center space-x-2 focus:outline-none"
+              className="cursor-pointer"
             >
               {renderAvatar()}
-              <div className="hidden md:block text-left">
-                <div className="text-sm font-medium text-gray-700">{user?.firstName} {user?.lastName}</div>
-                <div className="text-xs text-gray-500">@{user?.username}</div>
-              </div>
-            </button>
+            </div>
 
             {isUserMenuOpen && (
-              <div
-                ref={dropdownRef}
-                className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg py-2 z-50"
-              >
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
+                {/* User Profile */}
                 <div className="px-4 py-3 border-b">
                   <div className="flex items-center space-x-3">
-                    <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                      {renderAvatar()}
+                    <div 
+                      className="relative group cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Change profile picture"
+                    >
+                      {user?.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt="Profile"
+                          className="w-16 h-16 rounded-full object-cover 
+                                   group-hover:opacity-80 transition-all duration-200"
+                        />
+                      ) : (
+                        <div 
+                          className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center 
+                                   text-white font-bold group-hover:bg-blue-600 transition-all duration-200"
+                        >
+                          {getInitials(user?.firstName, user?.lastName)}
+                        </div>
+                      )}
                       <div className="absolute inset-0 flex items-center justify-center 
                                     bg-black bg-opacity-0 group-hover:bg-opacity-30 
                                     rounded-full transition-all duration-200">
-                        <div className="text-white text-xs font-medium opacity-0 
-                                      group-hover:opacity-100 transition-all duration-200 
-                                      px-2 py-1 bg-black bg-opacity-50 rounded-lg">
-                          Change photo
-                        </div>
+                        <Users className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-all duration-200" />
                       </div>
                       <input
                         ref={fileInputRef}
@@ -227,103 +273,115 @@ const Addition: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <div className="font-medium">{user?.firstName} {user?.lastName}</div>
+                      <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
                       <div className="text-sm text-gray-500">@{user?.username}</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="px-4 py-3 border-b">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Statistics</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-blue-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Total Games</div>
-                      <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
-                    </div>
-                    <div className="bg-green-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Perfect Games</div>
-                      <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
-                    </div>
-                    <div className="bg-purple-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Best Score</div>
-                      <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
-                    </div>
-                    <div className="bg-orange-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Best Time</div>
-                      <div className="text-lg font-bold text-orange-600">
-                        {userStats.bestTime ? formatTime(userStats.bestTime) : '--:--'}
+                {/* Stats */}
+                {userStats && (
+                  <div className="px-4 py-2 border-b border-gray-200">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Game Stats</div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Addition:</span>
+                        <span className="text-sm font-medium text-gray-900">{userStats.stats.addition.totalGames} games • {userStats.stats.addition.bestTime || '-'}s best</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Subtraction:</span>
+                        <span className="text-sm font-medium text-gray-900">{userStats.stats.subtraction.totalGames} games • {userStats.stats.subtraction.bestTime || '-'}s best</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Multiplication:</span>
+                        <span className="text-sm font-medium text-gray-900">{userStats.stats.multiplication.totalGames} games • {userStats.stats.multiplication.bestTime || '-'}s best</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Division:</span>
+                        <span className="text-sm font-medium text-gray-900">{userStats.stats.division.totalGames} games • {userStats.stats.division.bestTime || '-'}s best</span>
                       </div>
                     </div>
                   </div>
+                )}
+
+                {/* Logout Button */}
+                <div className="px-4 py-2">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 text-red-600 hover:bg-red-50 w-full px-2 py-1 rounded transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Exit to Menu</span>
+                  </button>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {!isGameStarted ? (
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-800 mb-8">Addition Challenge</h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Test your addition skills! Add the numbers as quickly as you can.
-            </p>
-            <button
-              onClick={startGame}
-              className="bg-green-500 text-white px-8 py-4 rounded-lg text-xl font-semibold
-                       hover:bg-green-600 transition-colors duration-200 flex items-center mx-auto"
-            >
-              <PlayIcon className="w-6 h-6 mr-2" />
-              Start Game
-            </button>
-          </div>
-        ) : (
-          <div className="flex-grow flex flex-col items-center justify-center">
-            <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-              <div className="flex justify-between items-center mb-4 text-sm text-gray-600">
-                <div>Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}</div>
-                <div>Score: {score}</div>
-                <div>Time: {formatTime(time)}</div>
-              </div>
-
-              <div className="text-center mb-8">
-                <img 
-                  src="/addition.png" 
-                  alt="Addition" 
-                  className="w-48 h-48 mx-auto mb-4"
-                />
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
-                  />
-                </div>
-                <div className="text-6xl font-bold text-gray-800 mt-6 mb-8">
-                  {num1} + {num2} = ?
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="w-full">
-                <input
-                  ref={inputRef}
-                  type="number"
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  className="w-full text-center text-4xl font-bold py-4 border-2 border-gray-300 rounded-lg
-                           focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                  placeholder="Your answer"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="w-full mt-4 bg-blue-500 text-white py-4 rounded-lg text-xl font-semibold
-                           hover:bg-blue-600 transition-colors duration-200"
-                >
-                  Submit
-                </button>
-              </form>
+        {/* Main content */}
+        <div className="flex-1 flex items-center justify-center">
+          {!isGameStarted ? (
+            <div className="text-center">
+              <img 
+                src="/addition.png" 
+                alt="Addition" 
+                className="w-32 h-32 mx-auto mb-8"
+              />
+              <h1 className="text-4xl font-bold text-gray-800 mb-8">Addition Challenge</h1>
+              <button
+                onClick={startGame}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg
+                         hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+              >
+                <PlayIcon className="w-6 h-6" />
+                <span>Start Game</span>
+              </button>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="w-full max-w-md">
+              <div className="bg-white rounded-2xl shadow-xl p-8">
+                <div className="text-center">
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
+                    />
+                  </div>
+                  <div className="mb-8">
+                    <img 
+                      src="/addition.png" 
+                      alt="Addition" 
+                      className="w-32 h-32 mx-auto"
+                    />
+                  </div>
+                  <div className="text-6xl font-bold text-gray-800 mb-4">
+                    {num1} + {num2}
+                  </div>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <input
+                      type="number"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      className="w-full text-center text-4xl font-bold py-3 border-2 border-gray-300 rounded-lg
+                               focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                      placeholder="Your answer"
+                      ref={inputRef}
+                    />
+                    <button
+                      type="submit"
+                      className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold
+                               hover:bg-green-700 transition-colors duration-200"
+                    >
+                      Submit Answer
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
