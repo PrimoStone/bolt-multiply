@@ -343,12 +343,28 @@ const Addition: React.FC = () => {
               <div className="bg-white rounded-2xl shadow-xl p-8">
                 <div className="text-center">
                   {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
                     <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
+                      className="h-3 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
+                        background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
+                        animation: 'shimmer 2s linear infinite'
+                      }}
                     />
                   </div>
+                  <style>
+                    {`
+                      @keyframes shimmer {
+                        0% {
+                          background-position: 200% center;
+                        }
+                        100% {
+                          background-position: -200% center;
+                        }
+                      }
+                    `}
+                  </style>
                   <div className="mb-8">
                     <img 
                       src="/addition.png" 

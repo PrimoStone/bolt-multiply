@@ -116,9 +116,15 @@ const Subtraction: React.FC = () => {
       setScore(score + 1);
     }
     
-    setQuestionsAnswered(questionsAnswered + 1);
+    const newQuestionsAnswered = questionsAnswered + 1;
+    setQuestionsAnswered(newQuestionsAnswered);
 
-    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
+    if (newQuestionsAnswered === TOTAL_QUESTIONS) {
+      // Stop the timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      
       const endTime = new Date();
       const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
@@ -254,24 +260,102 @@ const Subtraction: React.FC = () => {
                   </div>
                   
                   {userStats && (
-                    <div className="px-4 py-2 border-b border-gray-200">
-                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Game Stats</div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Addition:</span>
-                          <span className="text-sm font-medium text-gray-900">{userStats.stats.addition.totalGames} games • {userStats.stats.addition.bestTime || '-'}s best</span>
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="text-sm font-medium text-gray-700">Statistics</div>
+                        <Link 
+                          to="/profile"
+                          className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <span>View Full Stats</span>
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className="h-4 w-4 ml-1" 
+                            viewBox="0 0 20 20" 
+                            fill="currentColor"
+                          >
+                            <path 
+                              fillRule="evenodd" 
+                              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" 
+                              clipRule="evenodd" 
+                            />
+                          </svg>
+                        </Link>
+                      </div>
+                      {/* Addition Stats */}
+                      <div className="mb-4">
+                        <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Addition</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-blue-50 p-2 rounded">
+                            <div className="text-xs text-gray-500">Games</div>
+                            <div className="text-lg font-bold text-blue-600">
+                              {userStats.stats.addition.totalGames || 0}
+                            </div>
+                          </div>
+                          <div className="bg-orange-50 p-2 rounded">
+                            <div className="text-xs text-gray-500">Best Time</div>
+                            <div className="text-lg font-bold text-orange-600">
+                              {userStats.stats.addition.bestTime ? `${userStats.stats.addition.bestTime}s` : '-'}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Subtraction:</span>
-                          <span className="text-sm font-medium text-gray-900">{userStats.stats.subtraction.totalGames} games • {userStats.stats.subtraction.bestTime || '-'}s best</span>
+                      </div>
+
+                      {/* Subtraction Stats */}
+                      <div className="mb-4">
+                        <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Subtraction</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-blue-50 p-2 rounded">
+                            <div className="text-xs text-gray-500">Games</div>
+                            <div className="text-lg font-bold text-blue-600">
+                              {userStats.stats.subtraction.totalGames || 0}
+                            </div>
+                          </div>
+                          <div className="bg-orange-50 p-2 rounded">
+                            <div className="text-xs text-gray-500">Best Time</div>
+                            <div className="text-lg font-bold text-orange-600">
+                              {userStats.stats.subtraction.bestTime ? `${userStats.stats.subtraction.bestTime}s` : '-'}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Multiplication:</span>
-                          <span className="text-sm font-medium text-gray-900">{userStats.stats.multiplication.totalGames} games • {userStats.stats.multiplication.bestTime || '-'}s best</span>
+                      </div>
+
+                      {/* Multiplication Stats */}
+                      <div className="mb-4">
+                        <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Multiplication</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-blue-50 p-2 rounded">
+                            <div className="text-xs text-gray-500">Games</div>
+                            <div className="text-lg font-bold text-blue-600">
+                              {userStats.stats.multiplication.totalGames || 0}
+                            </div>
+                          </div>
+                          <div className="bg-orange-50 p-2 rounded">
+                            <div className="text-xs text-gray-500">Best Time</div>
+                            <div className="text-lg font-bold text-orange-600">
+                              {userStats.stats.multiplication.bestTime ? `${userStats.stats.multiplication.bestTime}s` : '-'}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Division:</span>
-                          <span className="text-sm font-medium text-gray-900">{userStats.stats.division.totalGames} games • {userStats.stats.division.bestTime || '-'}s best</span>
+                      </div>
+
+                      {/* Division Stats */}
+                      <div>
+                        <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Division</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-blue-50 p-2 rounded">
+                            <div className="text-xs text-gray-500">Games</div>
+                            <div className="text-lg font-bold text-blue-600">
+                              {userStats.stats.division.totalGames || 0}
+                            </div>
+                          </div>
+                          <div className="bg-orange-50 p-2 rounded">
+                            <div className="text-xs text-gray-500">Best Time</div>
+                            <div className="text-lg font-bold text-orange-600">
+                              {userStats.stats.division.bestTime ? `${userStats.stats.division.bestTime}s` : '-'}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -314,12 +398,28 @@ const Subtraction: React.FC = () => {
               <div className="bg-white rounded-2xl shadow-xl p-8">
                 <div className="text-center">
                   {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                  <div className="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
                     <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
+                      className="h-3 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
+                        background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
+                        animation: 'shimmer 2s linear infinite'
+                      }}
                     />
                   </div>
+                  <style>
+                    {`
+                      @keyframes shimmer {
+                        0% {
+                          background-position: 200% center;
+                        }
+                        100% {
+                          background-position: -200% center;
+                        }
+                      }
+                    `}
+                  </style>
                   <div className="mb-8">
                     <img 
                       src="/subtraction.png" 
