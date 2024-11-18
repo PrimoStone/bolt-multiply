@@ -186,6 +186,40 @@ const GameSelect: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-8">Choose a Game</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full">
+            {/* Addition Game */}
+            <Link 
+              to="/addition" 
+              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
+                       overflow-hidden group"
+            >
+              <div className="p-6 flex flex-col items-center">
+                <img 
+                  src="/addition.png" 
+                  alt="Addition" 
+                  className="w-48 h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                />
+                <h2 className="text-2xl font-bold text-gray-800 text-center">Addition</h2>
+                <p className="text-gray-600 text-center mt-2">Practice adding numbers</p>
+              </div>
+            </Link>
+
+            {/* Subtraction Game */}
+            <Link 
+              to="/subtraction" 
+              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
+                       overflow-hidden group"
+            >
+              <div className="p-6 flex flex-col items-center">
+                <img 
+                  src="/subtraction.png" 
+                  alt="Subtraction" 
+                  className="w-48 h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                />
+                <h2 className="text-2xl font-bold text-gray-800 text-center">Subtraction</h2>
+                <p className="text-gray-600 text-center mt-2">Practice subtracting numbers</p>
+              </div>
+            </Link>
+
             {/* Multiplication Game */}
             <Link 
               to="/game" 
@@ -194,13 +228,12 @@ const GameSelect: React.FC = () => {
             >
               <div className="p-6 flex flex-col items-center">
                 <img 
-                  src="/multiply.png" 
+                  src="/multiplication.png" 
                   alt="Multiplication" 
-                  className="w-32 h-32 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                  className="w-48 h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
                 />
-                <h2 className="text-2xl font-bold text-gray-800 text-center">
-                  Multiplication
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-800 text-center">Multiplication</h2>
+                <p className="text-gray-600 text-center mt-2">Practice multiplying numbers</p>
               </div>
             </Link>
 
@@ -216,9 +249,8 @@ const GameSelect: React.FC = () => {
                   alt="Division" 
                   className="w-48 h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
                 />
-                <h2 className="text-2xl font-bold text-gray-800 text-center">
-                  Division
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-800 text-center">Division</h2>
+                <p className="text-gray-600 text-center mt-2">Practice dividing numbers</p>
               </div>
             </Link>
           </div>
@@ -228,4 +260,4 @@ const GameSelect: React.FC = () => {
   );
 };
 
-export default GameSelect; 
+export default GameSelect;

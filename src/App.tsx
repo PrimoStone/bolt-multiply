@@ -10,6 +10,8 @@ import { db, auth } from './firebase/config';
 import TitlePage from './components/TitlePage';
 import GameSelect from './components/GameSelect';
 import DivisionGame from './components/DivisionGame';
+import Addition from './components/Addition';
+import Subtraction from './components/Subtraction';
 
 function App() {
   return (
@@ -22,6 +24,9 @@ function App() {
           <Route path="/progress" element={<Progress />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/division" element={<DivisionGame />} />
+          <Route path="/addition" element={<Addition />} />
+          <Route path="/subtraction" element={<Subtraction />} />
+          <Route path="/proof" element={<Proof />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </UserProvider>

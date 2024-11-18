@@ -107,71 +107,48 @@ const DivisionGame: React.FC = () => {
     setUserAnswer('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const correctAnswer = Math.floor(num1 / num2);
-    const isCorrect = parseInt(userAnswer) === correctAnswer;
-    
-    // Dodaj odpowiedź do historii
-    const newHistoryItem = {
-      question: `${num1} ÷ ${num2}`,
-      userAnswer,
-      correctAnswer: correctAnswer.toString(),
-      isCorrect
-    };
-    setGameHistory([...gameHistory, newHistoryItem]);
-    
-    // Aktualizuj wynik
+  const handleGameEnd = (finalScore: number, finalHistory: string[]) => {
+    const endTime = new Date();
+    navigate('/proof', {
+      state: {
+        score: finalScore,
+        totalQuestions: TOTAL_QUESTIONS,
+        startTime: startTime.getTime(),
+        endTime: endTime.getTime(),
+        gameHistory: finalHistory,
+        gameType: 'division'
+      }
+    });
+  };
+
+  const checkAnswer = () => {
+    if (!isGameStarted) {
+      setIsGameStarted(true);
+    }
+
+    const correctAnswer = num1 / num2;
+    const isCorrect = parseFloat(userAnswer) === correctAnswer;
+    const historyEntry = `${num1} ÷ ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
+    const newHistory = [...gameHistory, historyEntry];
+    setGameHistory(newHistory);
+
     if (isCorrect) {
       setScore(score + 1);
     }
-    
+
     setQuestionsAnswered(questionsAnswered + 1);
+    setUserAnswer('');
 
-    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
-      const endTime = new Date();
-      const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-      const finalScore = score + (isCorrect ? 1 : 0);
-      
-      console.log('Game finished, saving stats:', {
-        score: finalScore,
-        time: timeSpent,
-        isPerfect: finalScore === TOTAL_QUESTIONS
-      });
-
-      if (user) {
-        try {
-          await saveGameStats(
-            user.id,
-            user.username,
-            user.firstName,
-            user.lastName,
-            finalScore,
-            timeSpent,
-            finalScore === TOTAL_QUESTIONS
-          );
-          console.log('Game stats saved successfully');
-          
-          await refreshStats();
-          console.log('Stats refreshed');
-        } catch (error) {
-          console.error('Error saving game stats:', error);
-        }
-      }
-
-      navigate('/proof', { 
-        state: { 
-          score: score + (isCorrect ? 1 : 0), 
-          totalQuestions: TOTAL_QUESTIONS, 
-          startTime: startTime, 
-          endTime: endTime,
-          gameHistory: [...gameHistory, newHistoryItem]
-        } 
-      });
+    if (questionsAnswered + 1 === TOTAL_QUESTIONS) {
+      handleGameEnd(score + (isCorrect ? 1 : 0), newHistory);
     } else {
       generateQuestion();
-      setUserAnswer('');
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    checkAnswer();
   };
 
   const handleLogout = () => {
@@ -409,7 +386,7 @@ const DivisionGame: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <>
+              <div>
                 <div className="text-3xl font-bold text-center mb-4">
                   {num1} ÷ {num2} = ?
                 </div>
@@ -445,7 +422,7 @@ const DivisionGame: React.FC = () => {
                     Exit to Menu
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
