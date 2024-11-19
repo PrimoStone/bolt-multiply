@@ -283,10 +283,10 @@ const Subtraction = () => {
                     <div className="flex justify-between items-center mb-8">
                       <button
                         onClick={() => navigate('/gameselect')}
-                        className={gameStyles.backButton}
+                        className={`${gameStyles.backButton} ${gameColors.subtraction.button}`}
                       >
                         <ArrowLeft className={gameStyles.backIcon} />
-                        <span className="font-medium">Back</span>
+                        <span>Back</span>
                       </button>
                     </div>
 
