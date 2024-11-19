@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { UserGameStats } from '../types/stats';
+import { GameType, UserGameStats } from '../types/stats';
 
-export const useUserStats = (userId: string | undefined) => {
-  const [userStats, setUserStats] = useState<UserGameStats | null>(null);
+export const useUserStats = (userId: string | undefined, gameType: GameType) => {
+  const [stats, setStats] = useState<UserGameStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchUserStats = async () => {
     if (!userId) {
@@ -19,10 +19,10 @@ export const useUserStats = (userId: string | undefined) => {
       const userStatsDoc = await getDoc(userStatsRef);
       
       if (userStatsDoc.exists()) {
-        setUserStats(userStatsDoc.data() as UserGameStats);
+        setStats(userStatsDoc.data() as UserGameStats);
       } else {
         // Return default stats structure
-        setUserStats({
+        setStats({
           stats: {
             addition: {
               totalGames: 0,
@@ -74,20 +74,20 @@ export const useUserStats = (userId: string | undefined) => {
         });
       }
       setLoading(false);
-    } catch (error) {
-      console.error('Error fetching user stats:', error);
-      setError('Failed to load user stats');
+    } catch (err) {
+      console.error('Error fetching user stats:', err);
+      setError(err instanceof Error ? err : new Error('Failed to load user stats'));
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchUserStats();
-  }, [userId]);
+  }, [userId, gameType]);
 
   const refreshStats = () => {
     fetchUserStats();
   };
 
-  return { userStats, loading, error, refreshStats };
+  return { stats, loading, error, refreshStats };
 };
