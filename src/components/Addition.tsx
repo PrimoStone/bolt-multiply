@@ -190,19 +190,30 @@ const Addition: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
+    <div className="min-h-screen bg-gray-100 py-4 sm:py-6 px-4 flex flex-col justify-center relative">
+      {/* Logo at top */}
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 mt-4 sm:mt-6">
+        <Link to="/" className="inline-block">
+          <img 
+            src="/number-ninjas-logo.png" 
+            alt="Number Ninjas" 
+            className="h-12 sm:h-16 w-auto"
+          />
+        </Link>
+      </div>
+
+      <div className="relative py-3 w-full max-w-[95%] sm:max-w-xl mx-auto">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20 min-w-[500px]">
-          <div className="max-w-md mx-auto">
+        <div className="relative px-3 py-6 sm:px-4 sm:py-10 bg-white shadow-lg sm:rounded-3xl md:p-20 w-full min-w-[280px] sm:min-w-[500px]">
+          <div className="w-full max-w-md mx-auto">
             <div className="divide-y divide-gray-200">
-              <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                <div className="flex justify-between items-center mb-8">
+              <div className="py-4 sm:py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                <div className="flex justify-between items-center mb-4 sm:mb-8">
                   <button
                     onClick={() => navigate('/gameselect')}
-                    className="flex items-center text-gray-600 hover:text-gray-800"
+                    className="flex items-center text-gray-600 hover:text-gray-800 text-sm sm:text-base"
                   >
-                    <ArrowLeft className="w-5 h-5 mr-1" />
+                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1" />
                     Back
                   </button>
 
@@ -254,30 +265,30 @@ const Addition: React.FC = () => {
                 {/* Main content */}
                 <div className="flex-1 flex items-center justify-center">
                   {!isGameStarted ? (
-                    <div className="text-center">
+                    <div className="text-center w-full">
                       <img 
                         src="/addition.png" 
                         alt="Addition" 
-                        className="w-32 h-32 mx-auto mb-8"
+                        className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 sm:mb-8"
                       />
-                      <h1 className="text-4xl font-bold text-gray-800 mb-8">Addition Challenge</h1>
+                      <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-4 sm:mb-8">Addition Challenge</h1>
                       <button
                         onClick={startGame}
-                        className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg
-                                 hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                        className="bg-blue-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold shadow-lg
+                                 hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 mx-auto text-sm sm:text-base"
                       >
-                        <PlayIcon className="w-6 h-6" />
+                        <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                         <span>Start Game</span>
                       </button>
                     </div>
                   ) : (
                     <div className="w-full max-w-md">
-                      <div className="bg-white rounded-2xl shadow-xl p-8">
+                      <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8">
                         <div className="text-center">
                           {/* Progress Bar */}
-                          <div className="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
+                          <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3 mb-4 sm:mb-6 overflow-hidden">
                             <div 
-                              className="h-3 rounded-full transition-all duration-300"
+                              className="h-2 sm:h-3 rounded-full transition-all duration-300"
                               style={{ 
                                 width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
                                 background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
@@ -297,14 +308,14 @@ const Addition: React.FC = () => {
                               }
                             `}
                           </style>
-                          <div className="mb-8">
+                          <div className="mb-4 sm:mb-8">
                             <img 
                               src="/addition.png" 
                               alt="Addition" 
-                              className="w-32 h-32 mx-auto"
+                              className="w-24 h-24 sm:w-32 sm:h-32 mx-auto"
                             />
                           </div>
-                          <div className="text-6xl font-bold text-gray-800 mb-4">
+                          <div className="text-4xl sm:text-6xl font-bold text-gray-800 mb-4">
                             {num1} + {num2}
                           </div>
                           <form onSubmit={handleSubmit} className="space-y-4">
@@ -312,15 +323,15 @@ const Addition: React.FC = () => {
                               type="number"
                               value={userAnswer}
                               onChange={(e) => setUserAnswer(e.target.value)}
-                              className="w-full text-center text-4xl font-bold py-3 border-2 border-gray-300 rounded-lg
+                              className="w-full text-center text-3xl sm:text-4xl font-bold py-2 sm:py-3 border-2 border-gray-300 rounded-lg
                                        focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                               placeholder="Your answer"
                               ref={inputRef}
                             />
                             <button
                               type="submit"
-                              className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold
-                                       hover:bg-green-700 transition-colors duration-200"
+                              className="w-full bg-blue-600 text-white py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base
+                                       hover:bg-blue-700 transition-colors duration-200"
                             >
                               Submit Answer
                             </button>
@@ -336,6 +347,20 @@ const Addition: React.FC = () => {
         </div>
       </div>
 
+      {/* Mr. Primo logo at bottom */}
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 mb-4 sm:mb-6">
+        <Link to="https://mrprimo.com" target="_blank" rel="noopener noreferrer" className="inline-block">
+          <img 
+            src="/MrPrimo-LOGO-sm.png" 
+            alt="Mr. Primo" 
+            className="h-8 sm:h-10 w-auto hover:opacity-80 transition-opacity"
+          />
+        </Link>
+        <div className="text-center text-xs sm:text-sm text-gray-500 mt-1">
+          Powered by Mr. Primo
+        </div>
+      </div>
+
       {/* Stats Modal */}
       {showStats && (
         <StatsModal
@@ -347,6 +372,15 @@ const Addition: React.FC = () => {
           gameType="addition"
         />
       )}
+
+      {/* Hidden file input for profile picture */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleFileChange}
+      />
     </div>
   );
 };

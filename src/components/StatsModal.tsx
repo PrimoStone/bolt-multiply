@@ -157,3 +157,5 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     </div>
   );
 };
+
+export default StatsModal;
