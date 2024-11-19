@@ -1,87 +1,111 @@
-import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useState, useEffect, useContext } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { GameType, UserGameStats, UserProfile } from '../types/stats';
+import { UserContext } from '../contexts/UserContext';
 
-export const useUserStats = (userId: string | undefined) => {
-  const [userStats, setUserStats] = useState({
-    totalGames: 0,
-    bestScore: 0,
-    bestTime: 0,
-    perfectGames: 0
-  });
+export const useUserStats = (userId: string | undefined, gameType: GameType) => {
+  const [stats, setStats] = useState<UserGameStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { user } = useContext(UserContext);
 
   const fetchUserStats = async () => {
     if (!userId) {
-      console.log('No userId provided to useUserStats');
+      setLoading(false);
       return;
     }
 
     try {
-      // Sprawdź, czy mamy dostęp do bazy
-      console.log('DB reference:', db);
-      console.log('Attempting to fetch stats for userId:', userId);
+      const userStatsRef = doc(db, 'userStats', userId);
+      const userStatsDoc = await getDoc(userStatsRef);
+      
+      // Use user data from context
+      const userData = user ? {
+        id: user.id,
+        username: user.username || user.email?.split('@')[0] || 'User',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        photoURL: user.photoURL || null,
+        email: user.email || null
+      } : null;
 
-      // Pobierz referencję do kolekcji
-      const statsRef = collection(db, 'stats');
-      console.log('Collection reference created');
-
-      // Utwórz zapytanie
-      const q = query(statsRef, where('userId', '==', userId));
-      console.log('Query created:', q);
-
-      // Wykonaj zapytanie
-      const querySnapshot = await getDocs(q);
-      console.log('Query executed, documents found:', querySnapshot.size);
-
-      // Wyświetl wszystkie dokumenty
-      querySnapshot.forEach(doc => {
-        console.log('Document data:', {
-          id: doc.id,
-          data: doc.data()
+      console.log('User data in useUserStats:', userData);
+      
+      if (userStatsDoc.exists()) {
+        const statsData = userStatsDoc.data();
+        console.log('Stats data from Firestore:', statsData);
+        
+        setStats({
+          user: userData,
+          stats: {
+            ...statsData.stats,
+            [gameType]: statsData.stats?.[gameType] || {
+              totalGames: 0,
+              perfectGames: 0,
+              bestScore: 0,
+              bestTime: null,
+              totalCorrect: 0,
+              averageTime: 0,
+              lastPlayed: new Date()
+            },
+            overall: statsData.stats?.overall || {
+              totalGames: 0,
+              perfectGames: 0,
+              bestScore: 0,
+              bestTime: null,
+              totalCorrect: 0,
+              averageTime: 0,
+              lastPlayed: new Date(),
+              favoriteGame: null
+            }
+          }
         });
-      });
-
-      if (!querySnapshot.empty) {
-        const allGames = querySnapshot.docs.map(doc => doc.data());
-        console.log('All games data:', allGames);
-
-        // Oblicz statystyki
-        const stats = {
-          totalGames: allGames.length,
-          bestScore: Math.max(...allGames.map(game => game.score || 0)),
-          bestTime: Math.min(...allGames.map(game => game.timeSpent || Infinity)),
-          perfectGames: allGames.filter(game => game.score === 20).length
-        };
-
-        console.log('Calculated stats:', stats);
-        setUserStats(stats);
       } else {
-        console.log('No documents found for user');
-        setUserStats({
-          totalGames: 0,
-          bestScore: 0,
-          bestTime: 0,
-          perfectGames: 0
-        });
+        // Return default stats structure
+        const defaultStats = {
+          user: userData,
+          stats: {
+            [gameType]: {
+              totalGames: 0,
+              perfectGames: 0,
+              bestScore: 0,
+              bestTime: null,
+              totalCorrect: 0,
+              averageTime: 0,
+              lastPlayed: new Date()
+            },
+            overall: {
+              totalGames: 0,
+              perfectGames: 0,
+              bestScore: 0,
+              bestTime: null,
+              totalCorrect: 0,
+              averageTime: 0,
+              lastPlayed: new Date(),
+              favoriteGame: null
+            }
+          }
+        };
+        console.log('Setting default stats:', defaultStats);
+        setStats(defaultStats);
       }
-    } catch (error) {
-      console.error('Error in fetchUserStats:', error);
-      // Wyświetl pełny stack trace
-      if (error instanceof Error) {
-        console.error('Error stack:', error.stack);
-      }
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching user stats:', err);
+      setError(err instanceof Error ? err : new Error('Failed to load user stats'));
+      setLoading(false);
     }
   };
 
-  // Dodajmy więcej logów w useEffect
-  useEffect(() => {
-    console.log('useUserStats useEffect triggered');
-    console.log('Current userId:', userId);
-    if (userId) {
-      console.log('Calling fetchUserStats');
-      fetchUserStats();
-    }
-  }, [userId]);
+  const refreshStats = () => {
+    setLoading(true);
+    fetchUserStats();
+  };
 
-  return { userStats, refreshStats: fetchUserStats };
-}; 
+  useEffect(() => {
+    fetchUserStats();
+  }, [userId, gameType]);
+
+  return { stats, loading, error, refreshStats };
+};

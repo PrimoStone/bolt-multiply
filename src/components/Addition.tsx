@@ -2,12 +2,13 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
+import { convertToBase64 } from '../utils/imageUtils';
 import { saveGameStats } from '../firebase/utils';
-import { doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { convertToBase64 } from '../firebase/utils';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useUserStats } from '../hooks/useUserStats';
+import { StatsModal } from './StatsModal';
+import { gameStyles, gameColors } from '../styles/gameStyles';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -30,10 +31,10 @@ const Addition: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { userStats, refreshStats } = useUserStats(user?.id);
-  const [showStats, setShowStats] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { stats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'addition');
+  const [showStats, setShowStats] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -49,22 +50,33 @@ const Addition: React.FC = () => {
   }, [num1, num2]);
 
   useEffect(() => {
-    if (isGameStarted) {
-      timerRef.current = setInterval(() => {
-        setTime(prev => prev + 1);
-      }, 1000);
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
       }
     };
-  }, [isGameStarted]);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const startGame = () => {
+    setIsGameStarted(true);
+    setStartTime(new Date());
+    generateQuestion();
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTime(prev => prev + 1);
+    }, 1000);
+  };
 
   const generateQuestion = () => {
-    setNum1(Math.floor(Math.random() * 13));  // Numbers from 0 to 12
-    setNum2(Math.floor(Math.random() * 13));  // Numbers from 0 to 12
+    const newNum1 = Math.floor(Math.random() * 10) + 1;
+    const newNum2 = Math.floor(Math.random() * 10) + 1;
+    setNum1(newNum1);
+    setNum2(newNum2);
     setUserAnswer('');
   };
 
@@ -73,8 +85,7 @@ const Addition: React.FC = () => {
     const correctAnswer = num1 + num2;
     const isCorrect = parseInt(userAnswer) === correctAnswer;
     
-    // Update game history
-    const historyEntry = `${num1} + ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect, answer was ' + correctAnswer})`;
+    const historyEntry = `${num1} + ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
     setGameHistory([...gameHistory, historyEntry]);
     
     if (isCorrect) {
@@ -84,245 +95,274 @@ const Addition: React.FC = () => {
     setQuestionsAnswered(questionsAnswered + 1);
 
     if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
-      const endTime = new Date();
-      const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-      const finalScore = score + (isCorrect ? 1 : 0);
-
-      if (user) {
-        try {
-          await saveGameStats(
-            user.id,
-            user.username,
-            user.firstName,
-            user.lastName,
-            finalScore,
-            timeSpent,
-            finalScore === TOTAL_QUESTIONS
-          );
-          await refreshStats();
-        } catch (error) {
-          console.error('Error saving game stats:', error);
-        }
-      }
-
-      navigate('/proof', { 
-        state: { 
-          score: finalScore,
-          totalQuestions: TOTAL_QUESTIONS,
-          startTime: startTime.getTime(),
-          endTime: endTime.getTime(),
-          gameHistory: [...gameHistory, historyEntry],
-          gameType: 'addition'
-        } 
-      });
+      handleGameEnd();
     } else {
       generateQuestion();
-      setUserAnswer('');
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+  const handleGameEnd = async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
 
-  const startGame = () => {
-    setIsGameStarted(true);
+    const endTime = new Date();
+    const gameTime = (endTime.getTime() - startTime.getTime()) / 1000;
+
+    try {
+      await saveGameStats(user?.id || '', {
+        gameType: 'addition',
+        score,
+        totalQuestions: TOTAL_QUESTIONS,
+        timeSpent: gameTime,
+        history: gameHistory,
+      });
+
+      // Refresh stats after saving
+      await refreshStats();
+      
+      // Show stats modal
+      setShowStats(true);
+
+    } catch (error) {
+      console.error('Error saving game stats:', error);
+    }
+
+    setIsGameStarted(false);
     setTime(0);
   };
 
-  const renderAvatar = () => {
-    if (user?.photoURL) {
-      return (
-        <img
-          src={user.photoURL}
-          alt="Profile"
-          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-        />
-      );
+  const handleLogout = () => {
+    setUser(null);
+    navigate('/');
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const base64 = await convertToBase64(file);
+        if (user) {
+          const userRef = doc(db, 'users', user.id);
+          await updateDoc(userRef, {
+            photoURL: base64
+          });
+          setUser({ ...user, photoURL: base64 });
+        }
+      } catch (error) {
+        console.error('Error uploading profile picture:', error);
+      }
     }
-    return (
-      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-sm">
-        {getInitials(user?.firstName, user?.lastName)}
-      </div>
-    );
   };
 
   const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user?.id) return;
-
-    try {
-      const base64String = await convertToBase64(file);
-      
-      const userDocRef = doc(db, 'users', user.id);
-      await updateDoc(userDocRef, {
-        photoURL: base64String
-      });
-
-      setUser({
-        ...user,
-        photoURL: base64String
-      });
-
-    } catch (error) {
-      console.error('Error updating photo:', error);
-      alert('Failed to update profile photo');
+    if (file) {
+      try {
+        const base64 = await convertToBase64(file);
+        if (user) {
+          const userRef = doc(db, 'users', user.id);
+          await updateDoc(userRef, {
+            photoURL: base64
+          });
+          setUser({ ...user, photoURL: base64 });
+        }
+      } catch (error) {
+        console.error('Error uploading profile picture:', error);
+      }
     }
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  if (!user) return null;
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-100 to-orange-200 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8 flex justify-between items-center">
-          <Link to="/gameselect" className="text-gray-600 hover:text-gray-800 flex items-center">
-            <ArrowLeft className="w-6 h-6 mr-2" />
-            Back to Games
+    <div className={`${gameStyles.container} ${gameColors.addition.background}`}>
+      <div className={gameStyles.innerContainer}>
+        {/* Logo at top */}
+        <div className={gameStyles.numberNinjasLogo.wrapper}>
+          <Link to="/" className="inline-block">
+            <img 
+              src="/number-ninjas-logo.png" 
+              alt="Number Ninjas" 
+              className={gameStyles.numberNinjasLogo.image}
+            />
           </Link>
-          
-          {/* User Avatar and Menu */}
+        </div>
+
+        {/* User menu */}
+        <div className={gameStyles.userMenu.wrapper}>
           <div className="relative">
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center space-x-2 focus:outline-none"
+              className={gameStyles.userMenu.button}
             >
-              {renderAvatar()}
-              <div className="hidden md:block text-left">
-                <div className="text-sm font-medium text-gray-700">{user?.firstName} {user?.lastName}</div>
-                <div className="text-xs text-gray-500">@{user?.username}</div>
+              <div className={gameStyles.userMenu.avatar.wrapper}>
+                {user?.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt="Profile"
+                    className={gameStyles.userMenu.avatar.image}
+                  />
+                ) : (
+                  <div className={`${gameStyles.userMenu.avatar.placeholder} ${gameColors.addition.button}`}>
+                    {getInitials(user?.firstName, user?.lastName)}
+                  </div>
+                )}
               </div>
             </button>
 
             {isUserMenuOpen && (
               <div
                 ref={dropdownRef}
-                className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg py-2 z-50"
+                className={gameStyles.userMenu.dropdown.wrapper}
               >
-                <div className="px-4 py-3 border-b">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                      {renderAvatar()}
-                      <div className="absolute inset-0 flex items-center justify-center 
-                                    bg-black bg-opacity-0 group-hover:bg-opacity-30 
-                                    rounded-full transition-all duration-200">
-                        <div className="text-white text-xs font-medium opacity-0 
-                                      group-hover:opacity-100 transition-all duration-200 
-                                      px-2 py-1 bg-black bg-opacity-50 rounded-lg">
-                          Change photo
-                        </div>
-                      </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handlePhotoChange}
-                      />
-                    </div>
-                    <div>
-                      <div className="font-medium">{user?.firstName} {user?.lastName}</div>
-                      <div className="text-sm text-gray-500">@{user?.username}</div>
-                    </div>
-                  </div>
-                </div>
+                <Link
+                  to="/profile"
+                  className={gameStyles.userMenu.dropdown.item}
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  <Users className={gameStyles.userMenu.dropdown.icon} />
+                  Profile
+                </Link>
 
-                <div className="px-4 py-3 border-b">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Statistics</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-blue-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Total Games</div>
-                      <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
-                    </div>
-                    <div className="bg-green-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Perfect Games</div>
-                      <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
-                    </div>
-                    <div className="bg-purple-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Best Score</div>
-                      <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
-                    </div>
-                    <div className="bg-orange-50 p-2 rounded">
-                      <div className="text-xs text-gray-500">Best Time</div>
-                      <div className="text-lg font-bold text-orange-600">
-                        {userStats.bestTime ? formatTime(userStats.bestTime) : '--:--'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <button
+                  onClick={() => setShowStats(true)}
+                  className={gameStyles.userMenu.dropdown.item}
+                >
+                  <BarChart2 className={gameStyles.userMenu.dropdown.icon} />
+                  Stats
+                </button>
+
+                <button
+                  onClick={() => {
+                    setUser(null);
+                    navigate('/login');
+                  }}
+                  className={gameStyles.userMenu.dropdown.item}
+                >
+                  <LogOut className={gameStyles.userMenu.dropdown.icon} />
+                  Logout
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {!isGameStarted ? (
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-800 mb-8">Addition Challenge</h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Test your addition skills! Add the numbers as quickly as you can.
-            </p>
-            <button
-              onClick={startGame}
-              className="bg-green-500 text-white px-8 py-4 rounded-lg text-xl font-semibold
-                       hover:bg-green-600 transition-colors duration-200 flex items-center mx-auto"
-            >
-              <PlayIcon className="w-6 h-6 mr-2" />
-              Start Game
-            </button>
-          </div>
-        ) : (
-          <div className="flex-grow flex flex-col items-center justify-center">
-            <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-              <div className="flex justify-between items-center mb-4 text-sm text-gray-600">
-                <div>Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}</div>
-                <div>Score: {score}</div>
-                <div>Time: {formatTime(time)}</div>
-              </div>
+        {/* Main game content */}
+        <div className={gameStyles.contentWrapper}>
+          <div className={gameStyles.gameCard}>
+            <div className={`${gameStyles.gameCardGradient} ${gameColors.addition.gradient}`}></div>
+            <div className={gameStyles.gameCardInner}>
+              <div className="max-w-md mx-auto">
+                <div className="divide-y divide-gray-200">
+                  <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                    <div className="flex justify-between items-center mb-8">
+                      <button
+                        onClick={() => navigate('/gameselect')}
+                        className={`${gameStyles.backButton} ${gameColors.addition.button}`}
+                      >
+                        <ArrowLeft className={gameStyles.backIcon} />
+                        <span>Back</span>
+                      </button>
+                    </div>
 
-              <div className="text-center mb-8">
-                <img 
-                  src="/addition.png" 
-                  alt="Addition" 
-                  className="w-48 h-48 mx-auto mb-4"
-                />
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
-                  />
-                </div>
-                <div className="text-6xl font-bold text-gray-800 mt-6 mb-8">
-                  {num1} + {num2} = ?
+                    <div className={gameStyles.gameContent.wrapper}>
+                      {!isGameStarted ? (
+                        <div className={gameStyles.gameContent.startScreen.wrapper}>
+                          <img 
+                            src="/addition.png" 
+                            alt="Addition" 
+                            className={gameStyles.gameContent.startScreen.image}
+                          />
+                          <h1 className={gameStyles.gameContent.startScreen.title}>Addition Challenge</h1>
+                          <button
+                            onClick={startGame}
+                            className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.addition.button}`}
+                          >
+                            <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <span>Start Game</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={gameStyles.gameContent.gameScreen.wrapper}>
+                          <div className={gameStyles.gameContent.gameScreen.inner}>
+                            <div className={gameStyles.gameContent.gameScreen.content}>
+                              {/* Progress Bar */}
+                              <div className={gameStyles.gameContent.progressBar.wrapper}>
+                                <div 
+                                  className={gameStyles.gameContent.progressBar.inner}
+                                  style={{ 
+                                    width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
+                                    background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
+                                    animation: 'shimmer 2s linear infinite'
+                                  }}
+                                />
+                              </div>
+                              <style>
+                                {`
+                                  @keyframes shimmer {
+                                    0% { background-position: 200% center; }
+                                    100% { background-position: -200% center; }
+                                  }
+                                `}
+                              </style>
+                              <div className="mb-4 sm:mb-8">
+                                <img 
+                                  src="/addition.png" 
+                                  alt="Addition" 
+                                  className={gameStyles.gameContent.startScreen.image}
+                                />
+                              </div>
+                              <div className={gameStyles.gameContent.gameScreen.equation}>
+                                {num1} + {num2}
+                              </div>
+                              <form onSubmit={handleSubmit} className="space-y-4">
+                                <input
+                                  type="number"
+                                  value={userAnswer}
+                                  onChange={(e) => setUserAnswer(e.target.value)}
+                                  className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.addition.focus}`}
+                                  placeholder="Your answer"
+                                  ref={inputRef}
+                                />
+                                <button
+                                  type="submit"
+                                  className={`${gameStyles.gameContent.gameScreen.submitButton} ${gameColors.addition.button}`}
+                                >
+                                  Submit Answer
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <form onSubmit={handleSubmit} className="w-full">
-                <input
-                  ref={inputRef}
-                  type="number"
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  className="w-full text-center text-4xl font-bold py-4 border-2 border-gray-300 rounded-lg
-                           focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                  placeholder="Your answer"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="w-full mt-4 bg-blue-500 text-white py-4 rounded-lg text-xl font-semibold
-                           hover:bg-blue-600 transition-colors duration-200"
-                >
-                  Submit
-                </button>
-              </form>
             </div>
           </div>
+        </div>
+
+        {/* Mr. Primo logo at bottom */}
+        <div className={gameStyles.mrPrimoLogo.wrapper}>
+          <Link to="https://mrprimo.com" target="_blank" rel="noopener noreferrer" className="inline-block">
+            <img 
+              src="/MrPrimo-LOGO-sm.png" 
+              alt="Mr. Primo" 
+              className={gameStyles.mrPrimoLogo.image}
+            />
+          </Link>
+        </div>
+
+        {/* Stats Modal */}
+        {showStats && (
+          <StatsModal
+            isOpen={showStats}
+            onClose={() => setShowStats(false)}
+            stats={stats}
+            loading={statsLoading}
+            error={statsError}
+            gameType="addition"
+          />
         )}
       </div>
     </div>

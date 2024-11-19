@@ -12,6 +12,7 @@ import GameSelect from './components/GameSelect';
 import DivisionGame from './components/DivisionGame';
 import Addition from './components/Addition';
 import Subtraction from './components/Subtraction';
+import Profile from './components/Profile';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/addition" element={<Addition />} />
           <Route path="/subtraction" element={<Subtraction />} />
           <Route path="/proof" element={<Proof />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </UserProvider>

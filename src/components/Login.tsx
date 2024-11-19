@@ -15,7 +15,7 @@ const Login: React.FC = () => {
   const [photoPreview, setPhotoPreview] = useState<string>('');
   const [photoError, setPhotoError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const { setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
@@ -23,24 +23,21 @@ const Login: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        // Pokaż oryginalny rozmiar
         const originalSize = (file.size / 1024 / 1024).toFixed(2);
-        console.log(`Oryginalny rozmiar: ${originalSize}MB`);
+        console.log(`Original size: ${originalSize}MB`);
 
-        // Kompresuj i pokaż podgląd
         const compressedFile = await compressImage(file);
         const compressedSize = (compressedFile.size / 1024 / 1024).toFixed(2);
-        console.log(`Skompresowany rozmiar: ${compressedSize}MB`);
+        console.log(`Compressed size: ${compressedSize}MB`);
 
         setPhotoFile(compressedFile);
         setPhotoError('');
 
-        // Pokaż podgląd
         const reader = new FileReader();
         reader.onload = (e) => setPhotoPreview(e.target?.result as string);
         reader.readAsDataURL(compressedFile);
       } catch (error) {
-        setPhotoError('Błąd podczas przetwarzania zdjęcia');
+        setPhotoError('Error processing photo');
         console.error(error);
       }
     }
@@ -49,82 +46,107 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      const userData = await loginUser(username, password);
+      let userData;
+
+      if (isRegistering) {
+        // Registration
+        if (!username || !password || !firstName || !lastName) {
+          throw new Error('All fields are required');
+        }
+
+        userData = await registerUser(
+          username,
+          password,
+          firstName,
+          lastName,
+          photoFile || undefined
+        );
+      } else {
+        // Login
+        if (!username || !password) {
+          throw new Error('Username and password are required');
+        }
+
+        userData = await loginUser(username, password);
+      }
+
       setUser(userData);
       navigate('/');
     } catch (err) {
-      setError('Nieprawidłowa nazwa użytkownika lub hasło');
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-100 to-orange-200 flex flex-col justify-center items-center p-4">
       <div className="mb-8 w-full max-w-md flex justify-center">
-        <img 
-          src="/number-ninjas-logo.png" 
-          alt="Number Ninjas" 
+        <img
+          src="/number-ninjas-logo.png"
+          alt="Number Ninjas"
           className="w-64 h-auto"
         />
       </div>
 
       <div className="w-full max-w-md">
-        {/* Tutaj istniejący formularz */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nazwa użytkownika</label>
+            <label className="block text-sm font-medium text-gray-700">Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded mt-1"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Hasło</label>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded mt-1"
               required
             />
           </div>
-          
+
           {isRegistering && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Imię</label>
+                <label className="block text-sm font-medium text-gray-700">First Name</label>
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded mt-1"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Nazwisko</label>
+                <label className="block text-sm font-medium text-gray-700">Last Name</label>
                 <input
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded mt-1"
                   required
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Avatar (zostanie automatycznie zmniejszony)
+                  Avatar (will be automatically optimized)
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoChange}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded mt-1"
                 />
                 {photoError && (
                   <p className="text-red-500 text-sm mt-1">{photoError}</p>
@@ -137,7 +159,7 @@ const Login: React.FC = () => {
                       className="w-20 h-20 object-cover rounded-full mx-auto"
                     />
                     <p className="text-xs text-gray-500 text-center mt-1">
-                      Zdjęcie zostanie automatycznie zoptymalizowane
+                      Photo will be automatically optimized
                     </p>
                   </div>
                 )}
@@ -145,26 +167,34 @@ const Login: React.FC = () => {
             </>
           )}
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 disabled:bg-blue-300"
+            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-300 disabled:bg-blue-300 mt-4"
           >
-            {loading ? 'Przetwarzanie...' : (isRegistering ? 'Zarejestruj się' : 'Zaloguj się')}
+            {loading ? 'Processing...' : (isRegistering ? 'Register' : 'Login')}
           </button>
         </form>
 
-        {/* Zamień sekcję z linkiem na przełącznik */}
         <div className="mt-6 text-center">
           <button
-            onClick={() => setIsRegistering(!isRegistering)}
+            onClick={() => {
+              setIsRegistering(!isRegistering);
+              setError('');
+              setUsername('');
+              setPassword('');
+              setFirstName('');
+              setLastName('');
+              setPhotoFile(null);
+              setPhotoPreview('');
+            }}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
-            {isRegistering 
-              ? 'Masz już konto? Zaloguj się' 
-              : 'Nie masz jeszcze konta? Zarejestruj się'}
+            {isRegistering
+              ? 'Already have an account? Login'
+              : "Don't have an account? Register"}
           </button>
         </div>
       </div>

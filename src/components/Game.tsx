@@ -8,6 +8,8 @@ import { db } from '../firebase/config';
 import { convertToBase64 } from '../firebase/utils';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useUserStats } from '../hooks/useUserStats';
+import StatsModal from '../components/StatsModal'; // Import StatsModal component
+import { gameStyles, gameColors } from '../styles/gameStyles';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -34,7 +36,7 @@ const Game: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { userStats, refreshStats } = useUserStats(user?.id);
+  const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'multiplication');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showStats, setShowStats] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -127,43 +129,41 @@ const Game: React.FC = () => {
       const endTime = new Date();
       const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
-      
-      console.log('Game finished, saving stats:', {
-        score: finalScore,
-        time: timeSpent,
-        isPerfect: finalScore === TOTAL_QUESTIONS
-      });
+      const finalHistory = [...gameHistory, historyEntry];
 
       if (user) {
         try {
           await saveGameStats(
             user.id,
-            user.username,
-            user.firstName,
-            user.lastName,
-            finalScore,
-            timeSpent,
-            finalScore === TOTAL_QUESTIONS
+            {
+              gameType: 'multiplication',
+              score: finalScore,
+              totalQuestions: TOTAL_QUESTIONS,
+              timeSpent: timeSpent,
+              history: finalHistory
+            }
           );
           console.log('Game stats saved successfully');
           
           await refreshStats();
           console.log('Stats refreshed');
+
+          // Navigate with state after successful save
+          navigate('/proof', { 
+            state: { 
+              score: finalScore, 
+              totalQuestions: TOTAL_QUESTIONS,
+              startTime: startTime.getTime(),
+              endTime: endTime.getTime(),
+              gameHistory: finalHistory,
+              gameType: 'multiplication'
+            },
+            replace: true  // Use replace to prevent back navigation
+          });
         } catch (error) {
           console.error('Error saving game stats:', error);
         }
       }
-
-      navigate('/proof', { 
-        state: { 
-          score: finalScore, 
-          totalQuestions: TOTAL_QUESTIONS,
-          startTime: startTime.getTime(),
-          endTime: endTime.getTime(),
-          gameHistory: [...gameHistory, historyEntry],
-          gameType: 'multiplication'
-        } 
-      });
     } else {
       generateQuestion();
       setUserAnswer('');
@@ -215,248 +215,197 @@ const Game: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const renderAvatar = () => {
-    if (user?.photoURL) {
-      return (
-        <img
-          src={user.photoURL}
-          alt="Profile"
-          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-        />
-      );
-    }
-    return (
-      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold border-2 border-white shadow-sm">
-        {getInitials(user?.firstName, user?.lastName)}
-      </div>
-    );
-  };
-
   return (
-    <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
-      <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
-        {/* Header */}
-        <div className="h-[80px] py-4 flex items-center justify-between relative">
-          {/* Liczniki po lewej */}
-          <div className="flex flex-col items-start space-y-1">
-            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
-              <span className="text-gray-700 font-medium">Time:</span>
-              <span className="ml-2 font-bold text-blue-600">{formatTime(time)}</span>
-            </div>
-            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
-              <span className="text-gray-700 font-medium">Score:</span>
-              <span className="ml-2 font-bold text-green-600">{score}/{questionsAnswered}</span>
-            </div>
-          </div>
-
-          {/* Logo centralnie */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Link to="/">
-              <img 
-                src="/number-ninjas-logo.png"
-                alt="Number Ninjas"
-                className="w-24 h-auto"
-              />
-            </Link>
-          </div>
-
-          {/* Menu użytkownika po prawej */}
-          <div className="flex flex-col items-end relative">
-            <div className="relative" ref={dropdownRef}>
-              <div 
-                className="flex items-center space-x-3 cursor-pointer group"
-                onClick={() => setShowStats(!showStats)}
-              >
-                <div className="flex items-center">
-                  {renderAvatar()}
-                </div>
-              </div>
-
-              {showStats && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
-                  {/* Profil użytkownika */}
-                  <div className="px-4 py-3 border-b">
-                    <div className="flex items-center space-x-3">
-                      {/* Avatar z możliwością zmiany */}
-                      <div 
-                        className="relative group cursor-pointer"
-                        onClick={handleAvatarClick}
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Zmień zdjęcie profilowe"
-                      >
-                        {user?.photoURL ? (
-                          <img
-                            src={user.photoURL}
-                            alt="Profile"
-                            className="w-16 h-16 rounded-full object-cover 
-                                     group-hover:opacity-80 transition-all duration-200"
-                          />
-                        ) : (
-                          <div 
-                            className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center 
-                                     text-white font-bold group-hover:bg-blue-600 transition-all duration-200"
-                          >
-                            {getInitials(user?.firstName, user?.lastName)}
-                          </div>
-                        )}
-                        {/* Overlay z tekstem */}
-                        <div className="absolute inset-0 flex items-center justify-center 
-                                      bg-black bg-opacity-0 group-hover:bg-opacity-30 
-                                      rounded-full transition-all duration-200">
-                          <div className="text-white text-xs font-medium opacity-0 
-                                        group-hover:opacity-100 transition-all duration-200 
-                                        px-2 py-1 bg-black bg-opacity-50 rounded-lg">
-                            Zmień zdjęcie
-                          </div>
-                        </div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handlePhotoChange}
-                        />
-                      </div>
-                      <div>
-                        <div className="font-medium">{user?.firstName} {user?.lastName}</div>
-                        <div className="text-sm text-gray-500">@{user?.username}</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Statystyki użytkownika */}
-                  <div className="px-4 py-3 border-b">
-                    <div className="text-sm font-medium text-gray-700 mb-2">Statistics</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-blue-50 p-2 rounded">
-                        <div className="text-xs text-gray-500">Total Games</div>
-                        <div className="text-lg font-bold text-blue-600">{userStats.totalGames}</div>
-                      </div>
-                      <div className="bg-green-50 p-2 rounded">
-                        <div className="text-xs text-gray-500">Perfect Games</div>
-                        <div className="text-lg font-bold text-green-600">{userStats.perfectGames}</div>
-                      </div>
-                      <div className="bg-purple-50 p-2 rounded">
-                        <div className="text-xs text-gray-500">Best Score</div>
-                        <div className="text-lg font-bold text-purple-600">{userStats.bestScore}/20</div>
-                      </div>
-                      <div className="bg-orange-50 p-2 rounded">
-                        <div className="text-xs text-gray-500">Best Time</div>
-                        <div className="text-lg font-bold text-orange-600">
-                          {userStats.bestTime ? `${userStats.bestTime}s` : '-'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dane użytkownika */}
-                  <div className="px-4 py-2 border-b">
-                    <div className="text-sm text-gray-600">
-                      <div className="mb-2">
-                        <span className="font-medium">Username:</span> {user?.username}
-                      </div>
-                      <div className="mb-2">
-                        <span className="font-medium">First Name:</span> {user?.firstName}
-                      </div>
-                      <div className="mb-2">
-                        <span className="font-medium">Last Name:</span> {user?.lastName}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Przycisk wylogowania */}
-                  <div className="px-4 py-2">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                    >
-                      Wyjdź do menu
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+    <div className={`${gameStyles.container} ${gameColors.multiplication.background}`}>
+      <div className={gameStyles.innerContainer}>
+        {/* Logo at top */}
+        <div className={gameStyles.numberNinjasLogo.wrapper}>
+          <Link to="/" className="inline-block">
+            <img 
+              src="/number-ninjas-logo.png" 
+              alt="Number Ninjas" 
+              className={gameStyles.numberNinjasLogo.image}
+            />
+          </Link>
         </div>
 
-        {/* Game Content */}
-        <div className="flex-grow flex flex-col items-center justify-center">
-          <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-            {/* Question Display */}
-            <div className="text-center mb-8">
-              <img 
-                src="/multiplication.png" 
-                alt="Multiplication" 
-                className="w-48 h-48 mx-auto mb-4"
-              />
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
-                />
-              </div>
-            </div>
-            {!isGameStarted ? (
-              <div className="text-center">
-                <p className="mb-4">Practice multiplication tables!</p>
-                <button
-                  onClick={startGame}
-                  className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
-                >
-                  Start Game
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="text-3xl font-bold text-center mb-4">
-                  {num1} × {num2} = ?
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input
-                    ref={inputRef}
-                    type="number"
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    placeholder="Enter your answer"
-                    required
+        {/* User menu */}
+        <div className={gameStyles.userMenu.wrapper}>
+          <div className="relative">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className={gameStyles.userMenu.button}
+            >
+              <div className={gameStyles.userMenu.avatar.wrapper}>
+                {user?.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt="Profile"
+                    className={gameStyles.userMenu.avatar.image}
                   />
-                  <button
-                    type="submit"
-                    className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-300"
-                  >
-                    Check
-                  </button>
-                </form>
+                ) : (
+                  <div className={`${gameStyles.userMenu.avatar.placeholder} ${gameColors.multiplication.button}`}>
+                    {getInitials(user?.firstName, user?.lastName)}
+                  </div>
+                )}
+              </div>
+            </button>
 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Link 
-                    to="/leaderboard"
-                    className="text-center bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 transition duration-300"
-                  >
-                    Leaderboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
-                  >
-                    Exit to Menu
-                  </button>
-                </div>
+            {isUserMenuOpen && (
+              <div
+                ref={dropdownRef}
+                className={gameStyles.userMenu.dropdown.wrapper}
+              >
+                <Link
+                  to="/profile"
+                  className={gameStyles.userMenu.dropdown.item}
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  <Users className={gameStyles.userMenu.dropdown.icon} />
+                  Profile
+                </Link>
+
+                <button
+                  onClick={() => setShowStats(true)}
+                  className={gameStyles.userMenu.dropdown.item}
+                >
+                  <BarChart2 className={gameStyles.userMenu.dropdown.icon} />
+                  Stats
+                </button>
+
+                <button
+                  onClick={() => {
+                    setUser(null);
+                    navigate('/login');
+                  }}
+                  className={gameStyles.userMenu.dropdown.item}
+                >
+                  <LogOut className={gameStyles.userMenu.dropdown.icon} />
+                  Logout
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="h-[80px] py-4 text-center">
-          <img 
-            src="/MrPrimo-LOGO-sm.png"
-            alt="MrPrimo"
-            className="w-16 h-auto mx-auto opacity-80 hover:opacity-100 transition-opacity"
-          />
+        {/* Main game content */}
+        <div className={gameStyles.contentWrapper}>
+          <div className={gameStyles.gameCard}>
+            <div className={`${gameStyles.gameCardGradient} ${gameColors.multiplication.gradient}`}></div>
+            <div className={gameStyles.gameCardInner}>
+              <div className="max-w-md mx-auto">
+                <div className="divide-y divide-gray-200">
+                  <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                    <div className="flex justify-between items-center mb-8">
+                      <button
+                        onClick={() => navigate('/gameselect')}
+                        className={`${gameStyles.backButton} ${gameColors.multiplication.button}`}
+                      >
+                        <ArrowLeft className={gameStyles.backIcon} />
+                        <span>Back</span>
+                      </button>
+                    </div>
+
+                    <div className={gameStyles.gameContent.wrapper}>
+                      {!isGameStarted ? (
+                        <div className={gameStyles.gameContent.startScreen.wrapper}>
+                          <img 
+                            src="/multiplication.png" 
+                            alt="Multiplication" 
+                            className={gameStyles.gameContent.startScreen.image}
+                          />
+                          <h1 className={gameStyles.gameContent.startScreen.title}>Multiplication Challenge</h1>
+                          <button
+                            onClick={startGame}
+                            className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.multiplication.button}`}
+                          >
+                            <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <span>Start Game</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={gameStyles.gameContent.gameScreen.wrapper}>
+                          <div className={gameStyles.gameContent.gameScreen.inner}>
+                            <div className={gameStyles.gameContent.gameScreen.content}>
+                              {/* Progress Bar */}
+                              <div className={gameStyles.gameContent.progressBar.wrapper}>
+                                <div 
+                                  className={gameStyles.gameContent.progressBar.inner}
+                                  style={{ 
+                                    width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
+                                    background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
+                                    animation: 'shimmer 2s linear infinite'
+                                  }}
+                                />
+                              </div>
+                              <style>
+                                {`
+                                  @keyframes shimmer {
+                                    0% { background-position: 200% center; }
+                                    100% { background-position: -200% center; }
+                                  }
+                                `}
+                              </style>
+                              <div className="mb-4 sm:mb-8">
+                                <img 
+                                  src="/multiplication.png" 
+                                  alt="Multiplication" 
+                                  className={gameStyles.gameContent.startScreen.image}
+                                />
+                              </div>
+                              <div className={gameStyles.gameContent.gameScreen.equation}>
+                                {num1} × {num2}
+                              </div>
+                              <form onSubmit={handleSubmit} className="space-y-4">
+                                <input
+                                  type="number"
+                                  value={userAnswer}
+                                  onChange={(e) => setUserAnswer(e.target.value)}
+                                  className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.multiplication.focus}`}
+                                  placeholder="Your answer"
+                                  ref={inputRef}
+                                />
+                                <button
+                                  type="submit"
+                                  className={`${gameStyles.gameContent.gameScreen.submitButton} ${gameColors.multiplication.button}`}
+                                >
+                                  Submit Answer
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Mr. Primo logo at bottom */}
+        <div className={gameStyles.mrPrimoLogo.wrapper}>
+          <Link to="https://mrprimo.com" target="_blank" rel="noopener noreferrer" className="inline-block">
+            <img 
+              src="/MrPrimo-LOGO-sm.png" 
+              alt="Mr. Primo" 
+              className={gameStyles.mrPrimoLogo.image}
+            />
+          </Link>
+        </div>
+
+        {/* Stats Modal */}
+        {showStats && (
+          <StatsModal
+            isOpen={showStats}
+            onClose={() => setShowStats(false)}
+            stats={userStats}
+            loading={statsLoading}
+            error={statsError}
+            gameType="multiplication"
+          />
+        )}
       </div>
     </div>
   );
