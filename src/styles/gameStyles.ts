@@ -8,7 +8,7 @@ export const gameStyles = {
   // Game card
   gameCard: "relative py-3 sm:max-w-xl sm:mx-auto w-full",
   gameCardGradient: "absolute inset-0 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl",
-  gameCardInner: "relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20 w-full sm:min-w-[500px]",
+  gameCardInner: "relative px-4 py-10 backdrop-blur-2xl bg-white/40 shadow-lg sm:rounded-3xl sm:p-20 w-full sm:min-w-[500px] border border-white/30",
 
   // Logos
   numberNinjasLogo: {
@@ -26,12 +26,12 @@ export const gameStyles = {
     button: "flex items-center space-x-2 focus:outline-none",
     avatar: {
       wrapper: "w-16 h-16 sm:w-20 sm:h-20 relative",
-      image: "w-full h-full rounded-full object-cover border-2 border-white shadow-sm",
-      placeholder: "w-full h-full rounded-full flex items-center justify-center text-2xl sm:text-3xl text-white font-bold border-2 border-white shadow-sm"
+      image: "w-full h-full rounded-full object-cover border-2 border-white/60 shadow-sm",
+      placeholder: "w-full h-full rounded-full flex items-center justify-center text-2xl sm:text-3xl text-white font-bold border-2 border-white/60 shadow-sm"
     },
     dropdown: {
-      wrapper: "absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20",
-      item: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100",
+      wrapper: "absolute right-0 mt-2 w-48 bg-white/50 backdrop-blur-xl rounded-md shadow-lg py-1 z-20 border border-white/30",
+      item: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-white/30",
       icon: "w-4 h-4 mr-2"
     }
   },
@@ -51,14 +51,14 @@ export const gameStyles = {
     },
     gameScreen: {
       wrapper: "w-full max-w-md",
-      inner: "bg-white rounded-2xl shadow-xl p-4 sm:p-8",
+      inner: "backdrop-blur-2xl bg-white/50 rounded-2xl shadow-xl p-4 sm:p-8 border border-white/30",
       content: "text-center",
       equation: "text-4xl sm:text-6xl font-bold text-gray-800 mb-4",
-      input: "w-full text-center text-3xl sm:text-4xl font-bold py-2 sm:py-3 border-2 border-gray-300 rounded-lg outline-none transition-all",
+      input: "w-full text-center text-3xl sm:text-4xl font-bold py-2 sm:py-3 border-2 border-gray-300/60 rounded-lg outline-none transition-all bg-white/60 backdrop-blur",
       submitButton: "w-full py-2 sm:py-3 rounded-lg font-semibold transition-colors duration-200"
     },
     progressBar: {
-      wrapper: "w-full bg-gray-200 rounded-full h-2 sm:h-3 mb-4 sm:mb-6 overflow-hidden",
+      wrapper: "w-full bg-gray-200/30 backdrop-blur rounded-full h-2 sm:h-3 mb-4 sm:mb-6 overflow-hidden",
       inner: "h-2 sm:h-3 rounded-full transition-all duration-300"
     }
   }
@@ -67,27 +67,27 @@ export const gameStyles = {
 // Game-specific colors
 export const gameColors = {
   addition: {
-    background: "bg-blue-50",
-    gradient: "bg-gradient-to-r from-blue-400 to-blue-600",
-    button: "bg-blue-600 hover:bg-blue-700 text-white",
-    focus: "focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+    background: "bg-blue-50/30",
+    gradient: "bg-gradient-to-r from-blue-400/70 to-blue-600/70 backdrop-blur",
+    button: "bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur",
+    focus: "focus:border-blue-500/60 focus:ring-2 focus:ring-blue-200/60"
   },
   subtraction: {
-    background: "bg-green-50",
-    gradient: "bg-gradient-to-r from-green-400 to-green-600",
-    button: "bg-green-600 hover:bg-green-700 text-white",
-    focus: "focus:border-green-500 focus:ring-2 focus:ring-green-200"
+    background: "bg-green-50/30",
+    gradient: "bg-gradient-to-r from-green-400/70 to-green-600/70 backdrop-blur",
+    button: "bg-green-600/70 hover:bg-green-700/80 text-white backdrop-blur",
+    focus: "focus:border-green-500/60 focus:ring-2 focus:ring-green-200/60"
   },
   multiplication: {
-    background: "bg-purple-50",
-    gradient: "bg-gradient-to-r from-purple-400 to-purple-600",
-    button: "bg-purple-600 hover:bg-purple-700 text-white",
-    focus: "focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+    background: "bg-purple-50/30",
+    gradient: "bg-gradient-to-r from-purple-400/70 to-purple-600/70 backdrop-blur",
+    button: "bg-purple-600/70 hover:bg-purple-700/80 text-white backdrop-blur",
+    focus: "focus:border-purple-500/60 focus:ring-2 focus:ring-purple-200/60"
   },
   division: {
-    background: "bg-orange-50",
-    gradient: "bg-gradient-to-r from-orange-400 to-orange-600",
-    button: "bg-orange-600 hover:bg-orange-700 text-white",
-    focus: "focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
+    background: "bg-orange-50/30",
+    gradient: "bg-gradient-to-r from-orange-400/70 to-orange-600/70 backdrop-blur",
+    button: "bg-orange-600/70 hover:bg-orange-700/80 text-white backdrop-blur",
+    focus: "focus:border-orange-500/60 focus:ring-2 focus:ring-orange-200/60"
   }
 };
