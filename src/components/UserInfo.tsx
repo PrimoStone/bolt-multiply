@@ -44,12 +44,13 @@ const UserInfo: React.FC<UserInfoProps> = ({
           throw new Error('Failed to load user stats');
         }
 
+        console.log('Fetched user stats:', userStats);
         setStats(userStats);
         setAchievements(userAchievements || []);
       } catch (err) {
         if (!mounted) return;
         console.error('Error fetching user data:', err);
-        setError(err.message || 'Failed to load user data');
+        setError(err instanceof Error ? err.message : 'Failed to load user data');
       } finally {
         if (mounted) {
           setLoading(false);
@@ -95,12 +96,15 @@ const UserInfo: React.FC<UserInfoProps> = ({
     );
   }
 
+  const userData = stats.user;
+  const gameStats = stats.stats;
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
       {/* User Header */}
       <div className="mb-6 text-center">
-        <h2 className="text-2xl font-bold text-gray-800">{firstName} {lastName}</h2>
-        <p className="text-gray-600">@{username}</p>
+        <h2 className="text-2xl font-bold text-gray-800">{userData.firstName} {userData.lastName}</h2>
+        <p className="text-gray-600">@{userData.username}</p>
       </div>
 
       {/* Stats Overview */}
@@ -108,43 +112,68 @@ const UserInfo: React.FC<UserInfoProps> = ({
         <div className="bg-blue-50 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-3 text-blue-800">Addition</h3>
           <div className="space-y-2">
-            <p>Total Games: {stats.stats?.addition?.totalGames || 0}</p>
-            <p>Perfect Games: {stats.stats?.addition?.perfectGames || 0}</p>
-            <p>Best Score: {stats.stats?.addition?.bestScore || 0}</p>
-            <p>Average Time: {stats.stats?.addition?.averageTime?.toFixed(2) || 0}s</p>
+            <p>Total Games: {gameStats?.addition?.totalGames || 0}</p>
+            <p>Perfect Games: {gameStats?.addition?.perfectGames || 0}</p>
+            <p>Best Score: {gameStats?.addition?.bestScore || 0}</p>
+            <p>Average Time: {gameStats?.addition?.averageTime?.toFixed(2) || 0}s</p>
           </div>
         </div>
 
         <div className="bg-green-50 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-3 text-green-800">Multiplication</h3>
           <div className="space-y-2">
-            <p>Total Games: {stats.stats?.multiplication?.totalGames || 0}</p>
-            <p>Perfect Games: {stats.stats?.multiplication?.perfectGames || 0}</p>
-            <p>Best Score: {stats.stats?.multiplication?.bestScore || 0}</p>
-            <p>Average Time: {stats.stats?.multiplication?.averageTime?.toFixed(2) || 0}s</p>
+            <p>Total Games: {gameStats?.multiplication?.totalGames || 0}</p>
+            <p>Perfect Games: {gameStats?.multiplication?.perfectGames || 0}</p>
+            <p>Best Score: {gameStats?.multiplication?.bestScore || 0}</p>
+            <p>Average Time: {gameStats?.multiplication?.averageTime?.toFixed(2) || 0}s</p>
           </div>
         </div>
 
         <div className="bg-purple-50 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-3 text-purple-800">Subtraction</h3>
           <div className="space-y-2">
-            <p>Total Games: {stats.stats?.subtraction?.totalGames || 0}</p>
-            <p>Perfect Games: {stats.stats?.subtraction?.perfectGames || 0}</p>
-            <p>Best Score: {stats.stats?.subtraction?.bestScore || 0}</p>
-            <p>Average Time: {stats.stats?.subtraction?.averageTime?.toFixed(2) || 0}s</p>
+            <p>Total Games: {gameStats?.subtraction?.totalGames || 0}</p>
+            <p>Perfect Games: {gameStats?.subtraction?.perfectGames || 0}</p>
+            <p>Best Score: {gameStats?.subtraction?.bestScore || 0}</p>
+            <p>Average Time: {gameStats?.subtraction?.averageTime?.toFixed(2) || 0}s</p>
           </div>
         </div>
 
         <div className="bg-yellow-50 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-3 text-yellow-800">Division</h3>
           <div className="space-y-2">
-            <p>Total Games: {stats.stats?.division?.totalGames || 0}</p>
-            <p>Perfect Games: {stats.stats?.division?.perfectGames || 0}</p>
-            <p>Best Score: {stats.stats?.division?.bestScore || 0}</p>
-            <p>Average Time: {stats.stats?.division?.averageTime?.toFixed(2) || 0}s</p>
+            <p>Total Games: {gameStats?.division?.totalGames || 0}</p>
+            <p>Perfect Games: {gameStats?.division?.perfectGames || 0}</p>
+            <p>Best Score: {gameStats?.division?.bestScore || 0}</p>
+            <p>Average Time: {gameStats?.division?.averageTime?.toFixed(2) || 0}s</p>
           </div>
         </div>
       </div>
+
+      {/* Overall Stats */}
+      {gameStats?.overall && (
+        <div className="mt-6 bg-gray-50 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-3 text-gray-800">Overall Stats</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Total Games</p>
+              <p className="text-lg font-bold">{gameStats.overall.totalGames}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Perfect Games</p>
+              <p className="text-lg font-bold">{gameStats.overall.perfectGames}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Best Score</p>
+              <p className="text-lg font-bold">{gameStats.overall.bestScore}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Average Time</p>
+              <p className="text-lg font-bold">{gameStats.overall.averageTime?.toFixed(2) || 0}s</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Achievements Section */}
       {achievements.length > 0 && (

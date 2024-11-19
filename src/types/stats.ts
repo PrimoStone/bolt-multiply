@@ -10,8 +10,17 @@ export interface GameStats {
   lastPlayed: Date;
 }
 
+export interface UserProfile {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  photoURL?: string;
+}
+
 export interface UserGameStats {
-  [key: string]: {
+  user: UserProfile | null;
+  stats: {
     addition: GameStats;
     subtraction: GameStats;
     multiplication: GameStats;

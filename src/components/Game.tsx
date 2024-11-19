@@ -8,6 +8,7 @@ import { db } from '../firebase/config';
 import { convertToBase64 } from '../firebase/utils';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useUserStats } from '../hooks/useUserStats';
+import StatsModal from '../components/StatsModal'; // Import StatsModal component
 
 const TOTAL_QUESTIONS = 20;
 
@@ -34,7 +35,7 @@ const Game: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { userStats, refreshStats } = useUserStats(user?.id);
+  const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'multiplication');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showStats, setShowStats] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -129,26 +130,17 @@ const Game: React.FC = () => {
       const finalScore = score + (isCorrect ? 1 : 0);
       const finalHistory = [...gameHistory, historyEntry];
 
-      console.log('Game finished, preparing stats:', {
-        score: finalScore,
-        totalQuestions: TOTAL_QUESTIONS,
-        startTime: startTime.getTime(),
-        endTime: endTime.getTime(),
-        historyLength: finalHistory.length,
-        gameType: 'multiplication'
-      });
-
       if (user) {
         try {
           await saveGameStats(
             user.id,
-            user.username,
-            user.firstName,
-            user.lastName,
-            finalScore,
-            timeSpent,
-            finalScore === TOTAL_QUESTIONS,
-            'multiplication'
+            {
+              gameType: 'multiplication',
+              score: finalScore,
+              totalQuestions: TOTAL_QUESTIONS,
+              timeSpent: timeSpent,
+              history: finalHistory
+            }
           );
           console.log('Game stats saved successfully');
           
@@ -473,6 +465,18 @@ const Game: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Stats Modal */}
+      {showStats && (
+        <StatsModal
+          isOpen={showStats}
+          onClose={() => setShowStats(false)}
+          stats={userStats}
+          loading={statsLoading}
+          error={statsError}
+          gameType="multiplication"
+        />
+      )}
     </div>
   );
 };

@@ -7,6 +7,7 @@ import { saveGameStats } from '../firebase/utils';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useUserStats } from '../hooks/useUserStats';
+import { StatsModal } from './StatsModal';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -31,7 +32,7 @@ const Addition: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { userStats, refreshStats } = useUserStats(user?.id);
+  const { stats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'addition');
   const [showStats, setShowStats] = useState(false);
 
   const renderAvatar = () => {
@@ -135,6 +136,9 @@ const Addition: React.FC = () => {
 
       // Refresh stats after saving
       await refreshStats();
+      
+      // Show stats modal
+      setShowStats(true);
 
     } catch (error) {
       console.error('Error saving game stats:', error);
@@ -186,186 +190,163 @@ const Addition: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Game UI */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <button
-            onClick={() => navigate('/gameselect')}
-            className="flex items-center text-gray-600 hover:text-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 mr-1" />
-            Back
-          </button>
+    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
+        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20 min-w-[500px]">
+          <div className="max-w-md mx-auto">
+            <div className="divide-y divide-gray-200">
+              <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                <div className="flex justify-between items-center mb-8">
+                  <button
+                    onClick={() => navigate('/gameselect')}
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <ArrowLeft className="w-5 h-5 mr-1" />
+                    Back
+                  </button>
 
-          <div className="relative">
-            <button
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center space-x-2 focus:outline-none"
-            >
-              {renderAvatar()}
-            </button>
-
-            {isUserMenuOpen && (
-              <div
-                ref={dropdownRef}
-                className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
-              >
-                <Link
-                  to="/profile"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setIsUserMenuOpen(false)}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Profile
-                </Link>
-
-                <button
-                  onClick={() => setShowStats(true)}
-                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <BarChart2 className="w-4 h-4 mr-2" />
-                  Stats
-                </button>
-
-                <button
-                  onClick={() => {
-                    setUser(null);
-                    navigate('/login');
-                  }}
-                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Stats Modal */}
-        {showStats && userStats?.stats && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-              <h2 className="text-2xl font-bold mb-6">Your Stats</h2>
-              
-              <div className="space-y-6">
-                {/* Addition Stats */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 text-blue-600">Addition</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="text-sm text-gray-500">Total Games</div>
-                      <div className="text-lg font-bold">{userStats.stats.addition?.totalGames || 0}</div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="text-sm text-gray-500">Best Time</div>
-                      <div className="text-lg font-bold">{userStats.stats.addition?.bestTime || '-'}s</div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="text-sm text-gray-500">Average Time</div>
-                      <div className="text-lg font-bold">{userStats.stats.addition?.averageTime?.toFixed(1) || '-'}s</div>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded">
-                      <div className="text-sm text-gray-500">Perfect Games</div>
-                      <div className="text-lg font-bold">{userStats.stats.addition?.perfectGames || 0}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 flex justify-end">
-                <button
-                  onClick={() => setShowStats(false)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main content */}
-        <div className="flex-1 flex items-center justify-center">
-          {!isGameStarted ? (
-            <div className="text-center">
-              <img 
-                src="/addition.png" 
-                alt="Addition" 
-                className="w-32 h-32 mx-auto mb-8"
-              />
-              <h1 className="text-4xl font-bold text-gray-800 mb-8">Addition Challenge</h1>
-              <button
-                onClick={startGame}
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg
-                         hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
-              >
-                <PlayIcon className="w-6 h-6" />
-                <span>Start Game</span>
-              </button>
-            </div>
-          ) : (
-            <div className="w-full max-w-md">
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <div className="text-center">
-                  {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
-                    <div 
-                      className="h-3 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
-                        background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
-                        animation: 'shimmer 2s linear infinite'
-                      }}
-                    />
-                  </div>
-                  <style>
-                    {`
-                      @keyframes shimmer {
-                        0% {
-                          background-position: 200% center;
-                        }
-                        100% {
-                          background-position: -200% center;
-                        }
-                      }
-                    `}
-                  </style>
-                  <div className="mb-8">
-                    <img 
-                      src="/addition.png" 
-                      alt="Addition" 
-                      className="w-32 h-32 mx-auto"
-                    />
-                  </div>
-                  <div className="text-6xl font-bold text-gray-800 mb-4">
-                    {num1} + {num2}
-                  </div>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <input
-                      type="number"
-                      value={userAnswer}
-                      onChange={(e) => setUserAnswer(e.target.value)}
-                      className="w-full text-center text-4xl font-bold py-3 border-2 border-gray-300 rounded-lg
-                               focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                      placeholder="Your answer"
-                      ref={inputRef}
-                    />
+                  <div className="relative">
                     <button
-                      type="submit"
-                      className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold
-                               hover:bg-green-700 transition-colors duration-200"
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center space-x-2 focus:outline-none"
                     >
-                      Submit Answer
+                      {renderAvatar()}
                     </button>
-                  </form>
+
+                    {isUserMenuOpen && (
+                      <div
+                        ref={dropdownRef}
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
+                      >
+                        <Link
+                          to="/profile"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <Users className="w-4 h-4 mr-2" />
+                          Profile
+                        </Link>
+
+                        <button
+                          onClick={() => setShowStats(true)}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <BarChart2 className="w-4 h-4 mr-2" />
+                          Stats
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setUser(null);
+                            navigate('/login');
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Main content */}
+                <div className="flex-1 flex items-center justify-center">
+                  {!isGameStarted ? (
+                    <div className="text-center">
+                      <img 
+                        src="/addition.png" 
+                        alt="Addition" 
+                        className="w-32 h-32 mx-auto mb-8"
+                      />
+                      <h1 className="text-4xl font-bold text-gray-800 mb-8">Addition Challenge</h1>
+                      <button
+                        onClick={startGame}
+                        className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg
+                                 hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                      >
+                        <PlayIcon className="w-6 h-6" />
+                        <span>Start Game</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-full max-w-md">
+                      <div className="bg-white rounded-2xl shadow-xl p-8">
+                        <div className="text-center">
+                          {/* Progress Bar */}
+                          <div className="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
+                            <div 
+                              className="h-3 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
+                                background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
+                                animation: 'shimmer 2s linear infinite'
+                              }}
+                            />
+                          </div>
+                          <style>
+                            {`
+                              @keyframes shimmer {
+                                0% {
+                                  background-position: 200% center;
+                                }
+                                100% {
+                                  background-position: -200% center;
+                                }
+                              }
+                            `}
+                          </style>
+                          <div className="mb-8">
+                            <img 
+                              src="/addition.png" 
+                              alt="Addition" 
+                              className="w-32 h-32 mx-auto"
+                            />
+                          </div>
+                          <div className="text-6xl font-bold text-gray-800 mb-4">
+                            {num1} + {num2}
+                          </div>
+                          <form onSubmit={handleSubmit} className="space-y-4">
+                            <input
+                              type="number"
+                              value={userAnswer}
+                              onChange={(e) => setUserAnswer(e.target.value)}
+                              className="w-full text-center text-4xl font-bold py-3 border-2 border-gray-300 rounded-lg
+                                       focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                              placeholder="Your answer"
+                              ref={inputRef}
+                            />
+                            <button
+                              type="submit"
+                              className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold
+                                       hover:bg-green-700 transition-colors duration-200"
+                            >
+                              Submit Answer
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
+
+      {/* Stats Modal */}
+      {showStats && (
+        <StatsModal
+          isOpen={showStats}
+          onClose={() => setShowStats(false)}
+          stats={stats}
+          loading={statsLoading}
+          error={statsError}
+          gameType="addition"
+        />
+      )}
     </div>
   );
 };
