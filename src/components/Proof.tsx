@@ -19,19 +19,36 @@ const Proof: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to game select if no state is present
-    if (!location.state) {
+    // Check both user and location state
+    if (!user || !location.state) {
+      console.log('No user or state found:', { user, locationState: location.state });
       navigate('/');
       return;
     }
-  }, [location.state, navigate]);
+  }, [user, location.state, navigate]);
 
-  // Return early if no state
-  if (!location.state) {
+  // Return early if no user or state
+  if (!user || !location.state) {
     return null;
   }
 
   const { score, totalQuestions, startTime, endTime, gameHistory, gameType } = location.state as LocationState;
+
+  // Validate required data
+  if (!score || !totalQuestions || !startTime || !endTime || !gameHistory || !gameType) {
+    console.error('Missing required game data:', location.state);
+    navigate('/');
+    return null;
+  }
+
+  console.log('Game stats:', {
+    score,
+    totalQuestions,
+    startTime,
+    endTime,
+    gameHistory,
+    gameType
+  });
 
   const handlePrint = () => {
     window.print();

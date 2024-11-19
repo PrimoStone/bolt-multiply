@@ -2,9 +2,11 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
-import { convertToBase64, saveGameStats, getUserStats } from '../firebase/utils';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { convertToBase64 } from '../utils/imageUtils';
+import { saveGameStats } from '../firebase/utils';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { useUserStats } from '../hooks/useUserStats';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -29,7 +31,8 @@ const Subtraction: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [userStats, setUserStats] = useState<any>(null);
+  const { userStats, refreshStats } = useUserStats(user?.id);
+  const [showStats, setShowStats] = useState(false);
 
   const renderAvatar = () => {
     if (user?.photoURL) {
@@ -54,20 +57,8 @@ const Subtraction: React.FC = () => {
     } else {
       generateQuestion();
       setStartTime(new Date());
-      loadUserStats();
     }
   }, [user, navigate]);
-
-  const loadUserStats = async () => {
-    if (user) {
-      try {
-        const stats = await getUserStats(user.id);
-        setUserStats(stats);
-      } catch (error) {
-        console.error('Error loading user stats:', error);
-      }
-    }
-  };
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -106,56 +97,79 @@ const Subtraction: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await handleAnswer();
+  };
+
+  const handleKeyPress = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await handleAnswer();
+    }
+  };
+
+  const handleAnswer = async () => {
+    if (!userAnswer) return;
+
     const correctAnswer = num1 - num2;
     const isCorrect = parseInt(userAnswer) === correctAnswer;
-    
-    const historyEntry = `${num1} - ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
-    setGameHistory([...gameHistory, historyEntry]);
     
     if (isCorrect) {
       setScore(score + 1);
     }
+
+    const historyEntry = `${num1} - ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
+    setGameHistory([...gameHistory, historyEntry]);
+    setUserAnswer('');
     
     const newQuestionsAnswered = questionsAnswered + 1;
     setQuestionsAnswered(newQuestionsAnswered);
 
-    if (newQuestionsAnswered === TOTAL_QUESTIONS) {
-      // Stop the timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-      
-      const endTime = new Date();
-      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-      const finalScore = score + (isCorrect ? 1 : 0);
+    if (newQuestionsAnswered >= TOTAL_QUESTIONS) {
+      await handleGameEnd();
+    } else {
+      generateQuestion();
+    }
+  };
 
-      // Save game stats before navigating
-      if (user) {
-        await saveGameStats(
-          user.id,
-          user.username,
-          user.firstName,
-          user.lastName,
-          finalScore,
-          duration,
-          finalScore === TOTAL_QUESTIONS,
-          'subtraction'
-        );
-      }
-
-      navigate('/proof', { 
-        state: { 
-          score: finalScore, 
-          total: TOTAL_QUESTIONS,
-          time: duration,
-          history: [...gameHistory, historyEntry],
-          gameType: 'subtraction'
-        } 
-      });
-      return;
+  const handleGameEnd = async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
     }
 
-    generateQuestion();
+    const endTime = new Date();
+    const gameTime = (endTime.getTime() - startTime.getTime()) / 1000;
+    const finalScore = score + (parseInt(userAnswer) === num1 - num2 ? 1 : 0);
+
+    try {
+      await saveGameStats(user?.id || '', {
+        gameType: 'subtraction',
+        score: finalScore,
+        totalQuestions: TOTAL_QUESTIONS,
+        timeSpent: gameTime,
+        history: gameHistory,
+      });
+
+      // Refresh stats after saving
+      await refreshStats();
+
+      // Navigate to proof page with game results
+      navigate('/proof', { 
+        state: { 
+          score: finalScore,
+          totalQuestions: TOTAL_QUESTIONS,
+          startTime: startTime.getTime(),
+          endTime: endTime.getTime(),
+          gameHistory: gameHistory,
+          gameType: 'subtraction'
+        }
+      });
+
+    } catch (error) {
+      console.error('Error saving game stats:', error);
+    }
+
+    setIsGameStarted(false);
+    setTime(0);
   };
 
   const handleLogout = () => {
@@ -182,7 +196,8 @@ const Subtraction: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
+    <div className="min-h-screen bg-gray-100">
+      {/* Game UI */}
       <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
         {/* Header */}
         <div className="h-[80px] py-4 flex items-center justify-between relative">
@@ -259,7 +274,7 @@ const Subtraction: React.FC = () => {
                     </div>
                   </div>
                   
-                  {userStats && (
+                  {userStats?.stats && (
                     <div className="px-4 py-2 border-b border-gray-100">
                       <div className="flex justify-between items-center mb-3">
                         <div className="text-sm font-medium text-gray-700">Statistics</div>
@@ -290,13 +305,13 @@ const Subtraction: React.FC = () => {
                           <div className="bg-blue-50 p-2 rounded">
                             <div className="text-xs text-gray-500">Games</div>
                             <div className="text-lg font-bold text-blue-600">
-                              {userStats.stats.addition.totalGames || 0}
+                              {userStats.stats.addition?.totalGames || 0}
                             </div>
                           </div>
                           <div className="bg-orange-50 p-2 rounded">
                             <div className="text-xs text-gray-500">Best Time</div>
                             <div className="text-lg font-bold text-orange-600">
-                              {userStats.stats.addition.bestTime ? `${userStats.stats.addition.bestTime}s` : '-'}
+                              {userStats.stats.addition?.bestTime || '-'}s
                             </div>
                           </div>
                         </div>
@@ -306,54 +321,35 @@ const Subtraction: React.FC = () => {
                       <div className="mb-4">
                         <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Subtraction</div>
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-blue-50 p-2 rounded">
+                          <div className="bg-green-50 p-2 rounded">
                             <div className="text-xs text-gray-500">Games</div>
-                            <div className="text-lg font-bold text-blue-600">
-                              {userStats.stats.subtraction.totalGames || 0}
+                            <div className="text-lg font-bold text-green-600">
+                              {userStats.stats.subtraction?.totalGames || 0}
                             </div>
                           </div>
                           <div className="bg-orange-50 p-2 rounded">
                             <div className="text-xs text-gray-500">Best Time</div>
                             <div className="text-lg font-bold text-orange-600">
-                              {userStats.stats.subtraction.bestTime ? `${userStats.stats.subtraction.bestTime}s` : '-'}
+                              {userStats.stats.subtraction?.bestTime || '-'}s
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Multiplication Stats */}
-                      <div className="mb-4">
+                      <div>
                         <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Multiplication</div>
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-blue-50 p-2 rounded">
+                          <div className="bg-purple-50 p-2 rounded">
                             <div className="text-xs text-gray-500">Games</div>
-                            <div className="text-lg font-bold text-blue-600">
-                              {userStats.stats.multiplication.totalGames || 0}
+                            <div className="text-lg font-bold text-purple-600">
+                              {userStats.stats.multiplication?.totalGames || 0}
                             </div>
                           </div>
                           <div className="bg-orange-50 p-2 rounded">
                             <div className="text-xs text-gray-500">Best Time</div>
                             <div className="text-lg font-bold text-orange-600">
-                              {userStats.stats.multiplication.bestTime ? `${userStats.stats.multiplication.bestTime}s` : '-'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Division Stats */}
-                      <div>
-                        <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Division</div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-blue-50 p-2 rounded">
-                            <div className="text-xs text-gray-500">Games</div>
-                            <div className="text-lg font-bold text-blue-600">
-                              {userStats.stats.division.totalGames || 0}
-                            </div>
-                          </div>
-                          <div className="bg-orange-50 p-2 rounded">
-                            <div className="text-xs text-gray-500">Best Time</div>
-                            <div className="text-lg font-bold text-orange-600">
-                              {userStats.stats.division.bestTime ? `${userStats.stats.division.bestTime}s` : '-'}
+                              {userStats.stats.multiplication?.bestTime || '-'}s
                             </div>
                           </div>
                         </div>
@@ -435,8 +431,9 @@ const Subtraction: React.FC = () => {
                       type="number"
                       value={userAnswer}
                       onChange={(e) => setUserAnswer(e.target.value)}
+                      onKeyPress={handleKeyPress}
                       className="w-full text-center text-4xl font-bold py-3 border-2 border-gray-300 rounded-lg
-                               focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                               focus:outline-none focus:border-blue-500 transition-colors duration-200"
                       placeholder="Your answer"
                       ref={inputRef}
                     />
@@ -454,6 +451,49 @@ const Subtraction: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Stats Modal */}
+      {showStats && userStats?.stats && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-6">Your Stats</h2>
+            
+            <div className="space-y-6">
+              {/* Subtraction Stats */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-green-600">Subtraction</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-3 rounded">
+                    <div className="text-sm text-gray-500">Total Games</div>
+                    <div className="text-lg font-bold">{userStats.stats.subtraction?.totalGames || 0}</div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded">
+                    <div className="text-sm text-gray-500">Best Time</div>
+                    <div className="text-lg font-bold">{userStats.stats.subtraction?.bestTime || '-'}s</div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded">
+                    <div className="text-sm text-gray-500">Average Time</div>
+                    <div className="text-lg font-bold">{userStats.stats.subtraction?.averageTime?.toFixed(1) || '-'}s</div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded">
+                    <div className="text-sm text-gray-500">Perfect Games</div>
+                    <div className="text-lg font-bold">{userStats.stats.subtraction?.perfectGames || 0}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => setShowStats(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

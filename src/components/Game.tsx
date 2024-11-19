@@ -127,11 +127,15 @@ const Game: React.FC = () => {
       const endTime = new Date();
       const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
-      
-      console.log('Game finished, saving stats:', {
+      const finalHistory = [...gameHistory, historyEntry];
+
+      console.log('Game finished, preparing stats:', {
         score: finalScore,
-        time: timeSpent,
-        isPerfect: finalScore === TOTAL_QUESTIONS
+        totalQuestions: TOTAL_QUESTIONS,
+        startTime: startTime.getTime(),
+        endTime: endTime.getTime(),
+        historyLength: finalHistory.length,
+        gameType: 'multiplication'
       });
 
       if (user) {
@@ -150,21 +154,23 @@ const Game: React.FC = () => {
           
           await refreshStats();
           console.log('Stats refreshed');
+
+          // Navigate with state after successful save
+          navigate('/proof', { 
+            state: { 
+              score: finalScore, 
+              totalQuestions: TOTAL_QUESTIONS,
+              startTime: startTime.getTime(),
+              endTime: endTime.getTime(),
+              gameHistory: finalHistory,
+              gameType: 'multiplication'
+            },
+            replace: true  // Use replace to prevent back navigation
+          });
         } catch (error) {
           console.error('Error saving game stats:', error);
         }
       }
-
-      navigate('/proof', { 
-        state: { 
-          score: finalScore, 
-          totalQuestions: TOTAL_QUESTIONS,
-          startTime: startTime.getTime(),
-          endTime: endTime.getTime(),
-          gameHistory: [...gameHistory, historyEntry],
-          gameType: 'multiplication'
-        } 
-      });
     } else {
       generateQuestion();
       setUserAnswer('');

@@ -284,7 +284,7 @@ const GameSelect: React.FC = () => {
 
             {/* Multiplication Game */}
             <Link 
-              to="/multiplication" 
+              to="/game" 
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
                        overflow-hidden group"
             >

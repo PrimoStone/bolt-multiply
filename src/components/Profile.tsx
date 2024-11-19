@@ -1,4 +1,4 @@
-import React, { useContext, useRef } from 'react';
+import React, { useContext, useRef, useState, useCallback } from 'react';
 import { UserContext } from '../contexts/UserContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera } from 'lucide-react';
@@ -11,6 +11,12 @@ const Profile: React.FC = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLoadingChange = useCallback((loading: boolean) => {
+    setIsLoading(loading);
+  }, []);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -21,6 +27,8 @@ const Profile: React.FC = () => {
   };
 
   const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsLoading(true);
+    setError(null);
     const file = event.target.files?.[0];
     if (file) {
       try {
@@ -32,8 +40,10 @@ const Profile: React.FC = () => {
           });
           setUser({ ...user, photoURL: base64 });
         }
-      } catch (error) {
-        console.error('Error uploading profile picture:', error);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -108,6 +118,7 @@ const Profile: React.FC = () => {
           username={user.username}
           firstName={user.firstName}
           lastName={user.lastName}
+          onLoadingChange={handleLoadingChange}
         />
       </div>
     </div>

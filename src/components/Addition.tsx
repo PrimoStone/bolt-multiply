@@ -3,9 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
 import { convertToBase64 } from '../utils/imageUtils';
-import { saveGameStats, getUserStats } from '../firebase/utils';
+import { saveGameStats } from '../firebase/utils';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { useUserStats } from '../hooks/useUserStats';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -30,7 +31,8 @@ const Addition: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [userStats, setUserStats] = useState<any>(null);
+  const { userStats, refreshStats } = useUserStats(user?.id);
+  const [showStats, setShowStats] = useState(false);
 
   const renderAvatar = () => {
     if (user?.photoURL) {
@@ -55,21 +57,8 @@ const Addition: React.FC = () => {
     } else {
       generateQuestion();
       setStartTime(new Date());
-      // Load user stats
-      loadUserStats();
     }
   }, [user, navigate]);
-
-  const loadUserStats = async () => {
-    if (user) {
-      try {
-        const stats = await getUserStats(user.id);
-        setUserStats(stats);
-      } catch (error) {
-        console.error('Error loading user stats:', error);
-      }
-    }
-  };
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -121,38 +110,38 @@ const Addition: React.FC = () => {
     setQuestionsAnswered(questionsAnswered + 1);
 
     if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
-      const endTime = new Date();
-      const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-      const finalScore = score + (isCorrect ? 1 : 0);
+      handleGameEnd();
+    } else {
+      generateQuestion();
+    }
+  };
 
-      // Save game stats before navigating
-      if (user) {
-        await saveGameStats(
-          user.id,
-          user.username,
-          user.firstName,
-          user.lastName,
-          finalScore,
-          timeSpent,
-          finalScore === TOTAL_QUESTIONS,
-          'addition'
-        );
-      }
-
-      navigate('/proof', { 
-        state: { 
-          score: finalScore, 
-          totalQuestions: TOTAL_QUESTIONS,
-          startTime: startTime.getTime(),
-          endTime: endTime.getTime(),
-          gameHistory: [...gameHistory, historyEntry],
-          gameType: 'addition'
-        } 
-      });
-      return;
+  const handleGameEnd = async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
     }
 
-    generateQuestion();
+    const endTime = new Date();
+    const gameTime = (endTime.getTime() - startTime.getTime()) / 1000;
+
+    try {
+      await saveGameStats(user?.id || '', {
+        gameType: 'addition',
+        score,
+        totalQuestions: TOTAL_QUESTIONS,
+        timeSpent: gameTime,
+        history: gameHistory,
+      });
+
+      // Refresh stats after saving
+      await refreshStats();
+
+    } catch (error) {
+      console.error('Error saving game stats:', error);
+    }
+
+    setIsGameStarted(false);
+    setTime(0);
   };
 
   const handleLogout = () => {
@@ -197,174 +186,105 @@ const Addition: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] h-[100dvh] bg-gradient-to-b from-orange-100 to-orange-200">
-      <div className="max-w-3xl mx-auto px-4 h-full flex flex-col">
-        {/* Header */}
-        <div className="h-[80px] py-4 flex items-center justify-between relative">
-          {/* Left side counters */}
-          <div className="flex flex-col items-start space-y-1">
-            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
-              <span className="text-gray-700 font-medium">Time:</span>
-              <span className="ml-2 font-bold text-blue-600">{Math.floor(time / 60)}:{(time % 60).toString().padStart(2, '0')}</span>
-            </div>
-            <div className="flex items-center bg-white/50 px-3 py-1 rounded-lg shadow-sm">
-              <span className="text-gray-700 font-medium">Score:</span>
-              <span className="ml-2 font-bold text-green-600">{score}/{questionsAnswered}</span>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-100">
+      {/* Game UI */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <button
+            onClick={() => navigate('/gameselect')}
+            className="flex items-center text-gray-600 hover:text-gray-800"
+          >
+            <ArrowLeft className="w-5 h-5 mr-1" />
+            Back
+          </button>
 
-          {/* Centered logo */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Link to="/">
-              <img 
-                src="/number-ninjas-logo.png"
-                alt="Number Ninjas"
-                className="w-24 h-auto"
-              />
-            </Link>
-          </div>
+          <div className="relative">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center space-x-2 focus:outline-none"
+            >
+              {renderAvatar()}
+            </button>
 
-          {/* Right side user menu */}
-          <div className="flex items-center space-x-6">
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center space-x-2"
+            {isUserMenuOpen && (
+              <div
+                ref={dropdownRef}
+                className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10"
               >
-                {renderAvatar()}
-              </button>
+                <Link
+                  to="/profile"
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Profile
+                </Link>
 
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-10">
-                  <div className="px-4 py-3 border-b">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative group">
-                        {user?.photoURL ? (
-                          <img
-                            src={user.photoURL}
-                            alt="Profile"
-                            className="w-16 h-16 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                            {getInitials(user?.firstName, user?.lastName)}
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
-                        <div className="text-sm text-gray-500">{user?.username}</div>
-                      </div>
-                    </div>
-                  </div>
+                <button
+                  onClick={() => setShowStats(true)}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  <BarChart2 className="w-4 h-4 mr-2" />
+                  Stats
+                </button>
 
-                  {userStats && (
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="text-sm font-medium text-gray-700">Statistics</div>
-                        <Link 
-                          to="/profile"
-                          className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          <span>View Full Stats</span>
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            className="h-4 w-4 ml-1" 
-                            viewBox="0 0 20 20" 
-                            fill="currentColor"
-                          >
-                            <path 
-                              fillRule="evenodd" 
-                              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" 
-                              clipRule="evenodd" 
-                            />
-                          </svg>
-                        </Link>
-                      </div>
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* Addition Stats */}
-                        <div className="bg-blue-50 p-2 rounded">
-                          <div className="text-xs text-gray-500">Addition Games</div>
-                          <div className="text-lg font-bold text-blue-600">
-                            {userStats.stats?.addition?.totalGames || 0}
-                          </div>
-                        </div>
-                        <div className="bg-blue-50 p-2 rounded">
-                          <div className="text-xs text-gray-500">Best Time</div>
-                          <div className="text-lg font-bold text-blue-600">
-                            {userStats.stats?.addition?.bestTime || '-'}s
-                          </div>
-                        </div>
-                        {/* Subtraction Stats */}
-                        <div className="bg-green-50 p-2 rounded">
-                          <div className="text-xs text-gray-500">Subtraction Games</div>
-                          <div className="text-lg font-bold text-green-600">
-                            {userStats.stats?.subtraction?.totalGames || 0}
-                          </div>
-                        </div>
-                        <div className="bg-green-50 p-2 rounded">
-                          <div className="text-xs text-gray-500">Best Time</div>
-                          <div className="text-lg font-bold text-green-600">
-                            {userStats.stats?.subtraction?.bestTime || '-'}s
-                          </div>
-                        </div>
-                        {/* Multiplication Stats */}
-                        <div className="bg-purple-50 p-2 rounded">
-                          <div className="text-xs text-gray-500">Multiplication Games</div>
-                          <div className="text-lg font-bold text-purple-600">
-                            {userStats.stats?.multiplication?.totalGames || 0}
-                          </div>
-                        </div>
-                        <div className="bg-purple-50 p-2 rounded">
-                          <div className="text-xs text-gray-500">Best Time</div>
-                          <div className="text-lg font-bold text-purple-600">
-                            {userStats.stats?.multiplication?.bestTime || '-'}s
-                          </div>
-                        </div>
-                        {/* Division Stats */}
-                        <div className="bg-orange-50 p-2 rounded">
-                          <div className="text-xs text-gray-500">Division Games</div>
-                          <div className="text-lg font-bold text-orange-600">
-                            {userStats.stats?.division?.totalGames || 0}
-                          </div>
-                        </div>
-                        <div className="bg-orange-50 p-2 rounded">
-                          <div className="text-xs text-gray-500">Best Time</div>
-                          <div className="text-lg font-bold text-orange-600">
-                            {userStats.stats?.division?.bestTime || '-'}s
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="px-4 py-2">
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center space-x-2 text-red-600 hover:text-red-700"
-                    >
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-5 w-5" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                      >
-                        <path 
-                          fillRule="evenodd" 
-                          d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" 
-                          clipRule="evenodd" 
-                        />
-                      </svg>
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+                <button
+                  onClick={() => {
+                    setUser(null);
+                    navigate('/login');
+                  }}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Stats Modal */}
+        {showStats && userStats?.stats && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-6">Your Stats</h2>
+              
+              <div className="space-y-6">
+                {/* Addition Stats */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-blue-600">Addition</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="text-sm text-gray-500">Total Games</div>
+                      <div className="text-lg font-bold">{userStats.stats.addition?.totalGames || 0}</div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="text-sm text-gray-500">Best Time</div>
+                      <div className="text-lg font-bold">{userStats.stats.addition?.bestTime || '-'}s</div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="text-sm text-gray-500">Average Time</div>
+                      <div className="text-lg font-bold">{userStats.stats.addition?.averageTime?.toFixed(1) || '-'}s</div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded">
+                      <div className="text-sm text-gray-500">Perfect Games</div>
+                      <div className="text-lg font-bold">{userStats.stats.addition?.perfectGames || 0}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button
+                  onClick={() => setShowStats(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main content */}
         <div className="flex-1 flex items-center justify-center">
