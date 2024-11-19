@@ -122,7 +122,7 @@ const Addition: React.FC = () => {
 
     if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
       const endTime = new Date();
-      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
 
       // Save game stats before navigating
@@ -133,7 +133,7 @@ const Addition: React.FC = () => {
           user.firstName,
           user.lastName,
           finalScore,
-          duration,
+          timeSpent,
           finalScore === TOTAL_QUESTIONS,
           'addition'
         );
@@ -142,9 +142,10 @@ const Addition: React.FC = () => {
       navigate('/proof', { 
         state: { 
           score: finalScore, 
-          total: TOTAL_QUESTIONS,
-          time: duration,
-          history: [...gameHistory, historyEntry],
+          totalQuestions: TOTAL_QUESTIONS,
+          startTime: startTime.getTime(),
+          endTime: endTime.getTime(),
+          gameHistory: [...gameHistory, historyEntry],
           gameType: 'addition'
         } 
       });

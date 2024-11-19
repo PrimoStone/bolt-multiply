@@ -143,7 +143,8 @@ const Game: React.FC = () => {
             user.lastName,
             finalScore,
             timeSpent,
-            finalScore === TOTAL_QUESTIONS
+            finalScore === TOTAL_QUESTIONS,
+            'multiplication'
           );
           console.log('Game stats saved successfully');
           

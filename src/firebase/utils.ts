@@ -196,66 +196,88 @@ export const saveGameStats = async (
 
     let stats = userStatsDoc.exists() 
       ? userStatsDoc.data() 
-      : initializeUserStats();
+      : { stats: initializeUserStats() };
+
+    if (!stats.stats) {
+      stats.stats = initializeUserStats();
+    }
 
     // Update game-specific stats
-    const gameStats = stats[gameType];
-    gameStats.totalGames += 1;
-    gameStats.totalCorrect += score;
-    gameStats.lastPlayed = currentDate;
+    const gameStats = stats.stats[gameType];
+    if (!gameStats) {
+      stats.stats[gameType] = initializeGameStats();
+    }
+
+    // Update the stats
+    stats.stats[gameType].totalGames += 1;
+    stats.stats[gameType].totalCorrect += score;
+    stats.stats[gameType].lastPlayed = currentDate;
     
     if (isPerfect) {
-      gameStats.perfectGames += 1;
+      stats.stats[gameType].perfectGames += 1;
     }
     
-    if (score > gameStats.bestScore) {
-      gameStats.bestScore = score;
+    if (score > (stats.stats[gameType].bestScore || 0)) {
+      stats.stats[gameType].bestScore = score;
     }
     
-    if (timeSpent < (gameStats.bestTime || Infinity)) {
-      gameStats.bestTime = timeSpent;
+    if (timeSpent < (stats.stats[gameType].bestTime || Infinity)) {
+      stats.stats[gameType].bestTime = timeSpent;
     }
     
-    gameStats.averageTime = (gameStats.averageTime * (gameStats.totalGames - 1) + timeSpent) / gameStats.totalGames;
+    const gameCount = stats.stats[gameType].totalGames;
+    stats.stats[gameType].averageTime = (
+      (stats.stats[gameType].averageTime || 0) * (gameCount - 1) + timeSpent
+    ) / gameCount;
 
     // Update overall stats
-    const overall = stats.overall;
-    overall.totalGames += 1;
-    overall.totalCorrect += score;
-    overall.lastPlayed = currentDate;
+    stats.stats.overall.totalGames += 1;
+    stats.stats.overall.totalCorrect += score;
+    stats.stats.overall.lastPlayed = currentDate;
     
     if (isPerfect) {
-      overall.perfectGames += 1;
+      stats.stats.overall.perfectGames += 1;
     }
     
-    if (score > overall.bestScore) {
-      overall.bestScore = score;
+    if (score > (stats.stats.overall.bestScore || 0)) {
+      stats.stats.overall.bestScore = score;
     }
     
-    if (timeSpent < (overall.bestTime || Infinity)) {
-      overall.bestTime = timeSpent;
+    if (timeSpent < (stats.stats.overall.bestTime || Infinity)) {
+      stats.stats.overall.bestTime = timeSpent;
     }
-    
-    overall.averageTime = (overall.averageTime * (overall.totalGames - 1) + timeSpent) / overall.totalGames;
 
     // Update favorite game
-    const gameCounts = {
-      addition: stats.addition.totalGames,
-      subtraction: stats.subtraction.totalGames,
-      multiplication: stats.multiplication.totalGames,
-      division: stats.division.totalGames
-    };
-    
-    const favoriteGame = Object.entries(gameCounts).reduce((a, b) => 
-      a[1] > b[1] ? a : b)[0] as GameType;
-    
-    overall.favoriteGame = favoriteGame;
+    const games = ['addition', 'subtraction', 'multiplication', 'division'] as GameType[];
+    let maxGames = 0;
+    let favoriteGame = stats.stats.overall.favoriteGame;
 
-    // Save updated stats
+    for (const game of games) {
+      const gameCount = stats.stats[game]?.totalGames || 0;
+      if (gameCount > maxGames) {
+        maxGames = gameCount;
+        favoriteGame = game;
+      }
+    }
+    stats.stats.overall.favoriteGame = favoriteGame;
+
+    // Save the updated stats
     await setDoc(userStatsRef, stats);
 
-    // Check and update achievements
-    await checkAndUpdateAchievements(userId, stats);
+    // Add to leaderboard if perfect score
+    if (isPerfect) {
+      const leaderboardRef = collection(db, 'leaderboard');
+      await addDoc(leaderboardRef, {
+        userId,
+        username,
+        firstName,
+        lastName,
+        score,
+        timeSpent,
+        gameType,
+        timestamp: currentDate
+      });
+    }
 
     return stats;
   } catch (error) {
@@ -271,7 +293,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: 'Get 10 perfect scores in Addition',
     gameType: 'addition',
     requirement: { type: 'perfectGames', value: 10 },
-    icon: '🎯'
+    icon: ''
   },
   {
     id: 'subtraction-master',
@@ -279,7 +301,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: 'Get 10 perfect scores in Subtraction',
     gameType: 'subtraction',
     requirement: { type: 'perfectGames', value: 10 },
-    icon: '⭐'
+    icon: ''
   },
   {
     id: 'multiplication-master',
@@ -287,7 +309,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: 'Get 10 perfect scores in Multiplication',
     gameType: 'multiplication',
     requirement: { type: 'perfectGames', value: 10 },
-    icon: '🌟'
+    icon: ''
   },
   {
     id: 'division-master',
@@ -295,7 +317,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: 'Get 10 perfect scores in Division',
     gameType: 'division',
     requirement: { type: 'perfectGames', value: 10 },
-    icon: '💫'
+    icon: ''
   },
   {
     id: 'speed-demon',
@@ -303,7 +325,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: 'Complete any game mode in under 60 seconds',
     gameType: 'overall',
     requirement: { type: 'bestTime', value: 60 },
-    icon: '⚡'
+    icon: ''
   },
   {
     id: 'math-warrior',
@@ -311,7 +333,7 @@ const ACHIEVEMENTS: Achievement[] = [
     description: 'Play 100 games total',
     gameType: 'overall',
     requirement: { type: 'totalGames', value: 100 },
-    icon: '🏆'
+    icon: ''
   }
 ];
 
@@ -360,11 +382,11 @@ export const getUserStats = async (userId: string) => {
     
     if (!userStatsDoc.exists()) {
       const initialStats = initializeUserStats();
-      await setDoc(userStatsRef, initialStats);
+      await setDoc(userStatsRef, { stats: initialStats });
       return initialStats;
     }
     
-    return userStatsDoc.data();
+    return userStatsDoc.data().stats;
   } catch (error) {
     console.error('Error getting user stats:', error);
     throw error;
