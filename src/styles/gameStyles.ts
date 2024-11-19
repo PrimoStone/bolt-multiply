@@ -37,7 +37,7 @@ export const gameStyles = {
   },
 
   // Navigation
-  backButton: "absolute top-4 sm:top-6 left-4 sm:left-6 z-10 flex items-center space-x-2 text-gray-600 hover:text-gray-800 bg-white rounded-lg px-4 py-2 shadow-md hover:shadow-lg transition-all duration-200",
+  backButton: "flex items-center space-x-2 text-white font-semibold rounded-lg px-4 py-2 shadow-md hover:shadow-lg transition-all duration-200",
   backIcon: "w-5 h-5",
 
   // Game content

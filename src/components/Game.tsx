@@ -299,10 +299,10 @@ const Game: React.FC = () => {
                     <div className="flex justify-between items-center mb-8">
                       <button
                         onClick={() => navigate('/gameselect')}
-                        className={gameStyles.backButton}
+                        className={`${gameStyles.backButton} ${gameColors.multiplication.button}`}
                       >
                         <ArrowLeft className={gameStyles.backIcon} />
-                        <span className="font-medium">Back</span>
+                        <span>Back</span>
                       </button>
                     </div>
 
