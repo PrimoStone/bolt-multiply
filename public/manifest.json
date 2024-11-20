@@ -3,27 +3,29 @@
   "name": "Number Ninjas - Math Learning Game",
   "icons": [
     {
-      "src": "icons/nn-logo-192.png",
+      "src": "/icons/nn-logo-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/nn-logo-180.png",
+      "src": "/icons/nn-logo-180.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icons/nn-logo.png",
+      "src": "/icons/nn-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
   ],
-  "start_url": ".",
+  "id": "/",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#6366f1",
   "background_color": "#1f2937",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "scope": "/"
 }
