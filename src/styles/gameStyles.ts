@@ -12,8 +12,8 @@ export const gameStyles = {
 
   // Logos
   numberNinjasLogo: {
-    wrapper: "absolute top-0 left-1/2 transform -translate-x-1/2 mt-4 sm:mt-6 z-10",
-    image: "h-12 sm:h-16 w-auto"
+    wrapper: "!absolute !top-0 !left-4 sm:!left-6 !mt-4 sm:!mt-6 !z-10",
+    image: "!h-16 sm:!h-24 !w-auto"
   },
   mrPrimoLogo: {
     wrapper: "flex justify-center py-4",

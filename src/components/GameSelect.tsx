@@ -4,6 +4,7 @@ import { UserContext } from '../contexts/UserContext';
 import { auth } from '../firebase/config';
 import { signOut } from 'firebase/auth';
 import { useUserStats } from '../hooks/useUserStats';
+import { gameStyles } from '../styles/gameStyles';
 
 const GameSelect: React.FC = () => {
   const navigate = useNavigate();
@@ -71,12 +72,12 @@ const GameSelect: React.FC = () => {
     <div className="min-h-screen bg-gray-100 py-4 sm:py-6 px-4 flex flex-col relative">
       <div className="max-w-7xl mx-auto relative flex flex-col min-h-[calc(100vh-2rem)] sm:min-h-[calc(100vh-3rem)]">
         {/* Logo at top */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 mt-4 sm:mt-6">
+        <div className={gameStyles.numberNinjasLogo.wrapper}>
           <Link to="/" className="inline-block">
             <img 
               src="/number-ninjas-logo.png" 
               alt="Number Ninjas" 
-              className="h-12 sm:h-16 w-auto"
+              className={gameStyles.numberNinjasLogo.image}
             />
           </Link>
         </div>
