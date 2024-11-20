@@ -17,9 +17,9 @@ export const gameStyles = {
   },
   mrPrimoLogo: {
     wrapper: "flex justify-center py-4",
-    image: "h-8 sm:h-10 w-auto hover:opacity-80 transition-opacity"
+    image: "h-8 sm:h-10 w-auto hover:opacity-80 transition-opacity",
+    link: "https://mrprimo.org"
   },
-
   // User menu
   userMenu: {
     wrapper: "absolute top-4 sm:top-6 right-4 sm:right-6 z-10",

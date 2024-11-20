@@ -203,7 +203,7 @@ const GameSelect: React.FC = () => {
 
         {/* Mr. Primo logo at bottom */}
         <div className="flex justify-center py-4">
-          <Link to="https://mrprimo.com" target="_blank" rel="noopener noreferrer" className="inline-block">
+          <Link to="https://mrprimo.org" target="_blank" rel="noopener noreferrer" className="inline-block">
             <img 
               src="/MrPrimo-LOGO-sm.png" 
               alt="Mr. Primo" 
