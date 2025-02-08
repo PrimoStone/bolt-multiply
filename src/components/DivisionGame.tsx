@@ -184,8 +184,18 @@ const DivisionGame: React.FC = () => {
       // Refresh stats after saving
       await refreshStats();
       
-      // Show stats modal
-      setShowStats(true);
+      // Navigate to proof screen
+      navigate('/proof', { 
+        state: { 
+          score, 
+          totalQuestions: TOTAL_QUESTIONS,
+          startTime: startTime.getTime(),
+          endTime: endTime.getTime(),
+          gameHistory,
+          gameType: 'division'
+        },
+        replace: true  // Use replace to prevent back navigation
+      });
 
     } catch (error) {
       console.error('Error saving game stats:', error);

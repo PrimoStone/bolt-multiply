@@ -260,6 +260,21 @@ const Subtraction = () => {
           difficulty,
           timestamp: new Date().toISOString()
         });
+
+        await refreshStats();
+
+        // Navigate to proof screen
+        navigate('/proof', {
+          state: {
+            score,
+            totalQuestions: TOTAL_QUESTIONS,
+            startTime: startTime.getTime(),
+            endTime: endTime.getTime(),
+            gameHistory,
+            gameType: 'subtraction'
+          },
+          replace: true
+        });
       }
       
       // Reset game
@@ -268,7 +283,6 @@ const Subtraction = () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      await refreshStats();
     } else {
       moveToNextQuestion();
     }

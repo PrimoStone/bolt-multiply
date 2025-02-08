@@ -266,6 +266,21 @@ const Addition = () => {
           difficulty,
           timestamp: new Date().toISOString()
         });
+        
+        await refreshStats();
+        
+        // Navigate to proof screen
+        navigate('/proof', {
+          state: {
+            score,
+            totalQuestions: TOTAL_QUESTIONS,
+            startTime: startTime.getTime(),
+            endTime: endTime.getTime(),
+            gameHistory,
+            gameType: 'addition'
+          },
+          replace: true
+        });
       }
       
       // Reset game
@@ -274,7 +289,6 @@ const Addition = () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      await refreshStats();
     } else {
       moveToNextQuestion();
     }
