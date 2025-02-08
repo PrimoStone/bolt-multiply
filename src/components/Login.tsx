@@ -1,6 +1,6 @@
 import React, { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserContext } from '../contexts/UserContext';
+import { UserContext, useUser } from '../contexts/UserContext';
 import { loginUser, registerUser, compressImage } from '../firebase/utils';
 
 const Login: React.FC = () => {

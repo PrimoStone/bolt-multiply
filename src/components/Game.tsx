@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserContext } from '../contexts/UserContext';
+import { useUser } from '../contexts/UserContext';
 import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
 import { saveGameStats } from '../firebase/utils';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -10,6 +10,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useUserStats } from '../hooks/useUserStats';
 import StatsModal from '../components/StatsModal'; // Import StatsModal component
 import { gameStyles, gameColors } from '../styles/gameStyles';
+import CoinAnimation from '../components/CoinAnimation'; // Import CoinAnimation component
 
 const TOTAL_QUESTIONS = 20;
 
@@ -22,7 +23,7 @@ const getInitials = (firstName: string = '', lastName: string = '') => {
 };
 
 const Game: React.FC = () => {
-  const { user, setUser } = useContext(UserContext);
+  const { user, setUser, updateCoins } = useUser();
   const navigate = useNavigate();
   const [num1, setNum1] = useState(0);
   const [num2, setNum2] = useState(0);
@@ -43,6 +44,9 @@ const Game: React.FC = () => {
   const [selectedNumber, setSelectedNumber] = useState<number | undefined>();
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
   const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
+  const [showCoinAnimation, setShowCoinAnimation] = useState(false);
+  const [earnedCoins, setEarnedCoins] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   useEffect(() => {
     console.log('User data:', {
@@ -162,24 +166,42 @@ const Game: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const correctAnswer = num1 * num2;
-    const isCorrect = parseInt(userAnswer) === correctAnswer;
-    
-    // Update game history
-    const historyEntry = `${num1} × ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect, answer was ' + correctAnswer})`;
-    setGameHistory([...gameHistory, historyEntry]);
+    const answer = parseInt(userAnswer);
+    const isCorrect = answer === num1 * num2;
     
     if (isCorrect) {
-      setScore(score + 1);
+      // Calculate coin reward
+      const baseReward = 10;
+      const streakBonus = Math.floor(currentStreak / 5) * 5;
+      const speedBonus = time < 5 ? 5 : 0;
+      const totalReward = baseReward + streakBonus + speedBonus;
+      
+      setScore(prev => prev + 1);
+      setCurrentStreak(prev => prev + 1);
+      setEarnedCoins(totalReward);
+      setShowCoinAnimation(true);
+      
+      await updateCoins(totalReward);
+      setGameHistory(prev => [...prev, 
+        `${num1} × ${num2} = ${answer} (Correct! +${totalReward} coins)`
+      ]);
+    } else {
+      setCurrentStreak(0);
+      setGameHistory(prev => [...prev, 
+        `${num1} × ${num2} = ${answer} (correct answer was ${num1 * num2})`
+      ]);
     }
     
-    setQuestionsAnswered(questionsAnswered + 1);
-
+    setQuestionsAnswered(prev => prev + 1);
+    setUserAnswer('');
+    
     if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
       const endTime = new Date();
       const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
-      const finalHistory = [...gameHistory, historyEntry];
+      const finalHistory = [...gameHistory, 
+        `${num1} × ${num2} = ${answer} (${isCorrect ? 'Correct' : 'Incorrect, answer was ' + num1 * num2})`
+      ];
 
       if (user) {
         try {
@@ -275,6 +297,12 @@ const Game: React.FC = () => {
 
   return (
     <div className={`${gameStyles.container} ${gameColors.multiplication.background}`}>
+      {showCoinAnimation && (
+        <CoinAnimation 
+          amount={earnedCoins}
+          onComplete={() => setShowCoinAnimation(false)}
+        />
+      )}
       <div className={gameStyles.innerContainer}>
         {/* Logo at top */}
         <div className={gameStyles.numberNinjasLogo.wrapper}>
