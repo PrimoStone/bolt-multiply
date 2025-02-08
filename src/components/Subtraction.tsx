@@ -17,6 +17,12 @@ interface Question {
   num2: number;
 }
 
+const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -34,28 +40,28 @@ const generateQuestionsArray = (
   const questions: Question[] = [];
   
   if (selectedNumber !== undefined) {
-    // Fixed number mode - selected number is always first (minuend)
-    const fixedNum = selectedNumber;
-    let maxSubtrahend: number;
+    // Fixed number mode - selected number is always the subtrahend (number being used to subtract)
+    const fixedSubtrahend = selectedNumber;
+    let maxMinuend: number;
     
     switch (difficulty) {
       case 'easy':
-        maxSubtrahend = Math.min(10, fixedNum - 1); // Result at least 1
+        maxMinuend = fixedSubtrahend + 10; // Result up to 10
         break;
       case 'medium':
-        maxSubtrahend = Math.min(20, fixedNum - 1);
+        maxMinuend = fixedSubtrahend + 20; // Result up to 20
         break;
       case 'hard':
-        maxSubtrahend = Math.min(50, fixedNum - 1);
+        maxMinuend = fixedSubtrahend + 50; // Result up to 50
         break;
       default:
-        maxSubtrahend = Math.min(10, fixedNum - 1);
+        maxMinuend = fixedSubtrahend + 10;
     }
     
-    // Generate all possible combinations
+    // Generate all possible combinations where minuend > subtrahend
     const possibleQuestions: Question[] = [];
-    for (let i = 1; i <= maxSubtrahend; i++) {
-      possibleQuestions.push({ num1: fixedNum, num2: i });
+    for (let minuend = fixedSubtrahend + 1; minuend <= maxMinuend; minuend++) {
+      possibleQuestions.push({ num1: minuend, num2: fixedSubtrahend });
     }
     
     // If we need more questions than possible combinations, we'll need to repeat
@@ -436,38 +442,49 @@ const Subtraction = () => {
                           <img 
                             src="/subtraction.png" 
                             alt="Subtraction" 
-                            className={gameStyles.gameContent.startScreen.image}
+                            className="w-48 h-48 object-contain mx-auto mb-4"
                           />
-                          <h1 className={gameStyles.gameContent.startScreen.title}>Subtraction Challenge</h1>
-                          <div className="mb-8">
-                            <label className="block text-gray-700 text-sm font-bold mb-4">
+                          {/* <h1 className={gameStyles.gameContent.startScreen.title}>Subtraction Challenge</h1> */}
+
+                          {/* Number Selection */}
+                          <div className="mb-6">
+                            <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
                               Select a Number (Optional)
                             </label>
-                            <div className="grid grid-cols-4 gap-4 mb-6">
+                            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[320px] mx-auto">
                               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
-                                <button
-                                  key={num}
-                                  onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
-                                  className={`
-                                    w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold
-                                    transition-all duration-200 ease-in-out
-                                    ${selectedNumber === num 
-                                      ? 'bg-red-500 text-white shadow-lg scale-110' 
-                                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-red-500 hover:text-red-500'}
-                                  `}
-                                >
-                                  {num}
-                                </button>
+                                <div key={num} className="flex items-center justify-center">
+                                  <button
+                                    onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
+                                    className={`
+                                      w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-base sm:text-lg font-semibold
+                                      transition-all duration-200 ease-in-out
+                                      ${selectedNumber === num 
+                                        ? 'bg-green-500 text-white shadow-lg scale-110' 
+                                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-green-500 hover:text-green-500'}
+                                    `}
+                                  >
+                                    {num}
+                                  </button>
+                                </div>
                               ))}
                             </div>
-                            {selectedNumber === undefined && (
-                              <p className="text-sm text-gray-500 mt-2">
-                                No number selected - using random numbers
-                              </p>
-                            )}
+                            <div className="mt-2 text-center">
+                              {selectedNumber === undefined ? (
+                                <p className="text-sm text-gray-500">
+                                  No number selected - using random numbers
+                                </p>
+                              ) : (
+                                <p className="text-sm text-green-600">
+                                  Practice subtracting {selectedNumber}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="mb-8">
-                            <label className="block text-gray-700 text-sm font-bold mb-4">
+
+                          {/* Difficulty Selection */}
+                          <div className="mb-6">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
                               Difficulty Level
                             </label>
                             <div className="flex gap-2">
@@ -476,19 +493,20 @@ const Subtraction = () => {
                                   key={d}
                                   className={`flex-1 py-2 px-4 rounded-lg capitalize ${
                                     difficulty === d
-                                      ? 'bg-blue-500 text-white'
+                                      ? 'bg-green-500 text-white'
                                       : 'bg-gray-200 text-gray-700'
-                                  } hover:bg-blue-400 hover:text-white transition-colors`}
-                                  onClick={() => setDifficulty(d as GameDifficulty)}
+                                  } hover:bg-green-400 hover:text-white transition-colors`}
+                                  onClick={() => setDifficulty(d as 'easy' | 'medium' | 'hard')}
                                 >
                                   {d}
                                 </button>
                               ))}
                             </div>
                           </div>
+
                           <button
                             onClick={startGame}
-                            className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.subtraction.button}`}
+                            className="px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 flex items-center space-x-2 mx-auto text-sm sm:text-base bg-green-600/70 hover:bg-green-700/80 text-white backdrop-blur"
                           >
                             <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                             <span>Start Game</span>
@@ -496,55 +514,73 @@ const Subtraction = () => {
                         </div>
                       ) : (
                         <div className={gameStyles.gameContent.gameScreen.wrapper}>
-                          <div className={gameStyles.gameContent.gameScreen.inner}>
-                            <div className={gameStyles.gameContent.gameScreen.content}>
-                              {/* Progress Bar */}
-                              <div className={gameStyles.gameContent.progressBar.wrapper}>
-                                <div 
-                                  className={gameStyles.gameContent.progressBar.inner}
-                                  style={{ 
-                                    width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
-                                    background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
-                                    animation: 'shimmer 2s linear infinite'
-                                  }}
-                                />
-                              </div>
-                              <style>
-                                {`
-                                  @keyframes shimmer {
-                                    0% { background-position: 200% center; }
-                                    100% { background-position: -200% center; }
-                                  }
-                                `}
-                              </style>
-                              <div className="mb-4 sm:mb-8">
-                                <img 
-                                  src="/subtraction.png" 
-                                  alt="Subtraction" 
-                                  className={gameStyles.gameContent.startScreen.image}
-                                />
-                              </div>
-                              <div className={gameStyles.gameContent.gameScreen.equation}>
-                                {num1} - {num2}
-                              </div>
-                              <form onSubmit={handleSubmit} className="space-y-4">
-                                <input
-                                  type="number"
-                                  value={userAnswer}
-                                  onChange={(e) => setUserAnswer(e.target.value)}
-                                  className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.subtraction.focus}`}
-                                  placeholder="Your answer"
-                                  ref={inputRef}
-                                  onKeyPress={handleKeyPress}
-                                />
-                                <button
-                                  type="submit"
-                                  className={`${gameStyles.gameContent.gameScreen.submitButton} ${gameColors.subtraction.button}`}
-                                >
-                                  Submit Answer
-                                </button>
-                              </form>
+                          {/* Progress Bar */}
+                          <div className={gameStyles.gameContent.progressBar.wrapper}>
+                            <div 
+                              className={gameStyles.gameContent.progressBar.inner}
+                              style={{ 
+                                width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
+                                background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
+                                animation: 'shimmer 2s linear infinite'
+                              }}
+                            />
+                          </div>
+                          <style>
+                            {`
+                              @keyframes shimmer {
+                                0% { background-position: 200% center; }
+                                100% { background-position: -200% center; }
+                              }
+                            `}
+                          </style>
+
+                          <div className="flex justify-between mb-6 text-gray-600 font-medium">
+                            <div>Score: {score}</div>
+                            <div>Time: {formatTime(time)}</div>
+                            <div>
+                              Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}
                             </div>
+                          </div>
+
+                          <div className="mb-4 sm:mb-8">
+                            <img 
+                              src="/subtraction.png" 
+                              alt="Subtraction" 
+                              className="w-48 h-48 object-contain mx-auto mb-2"
+                            />
+                          </div>
+
+                          <div className="text-4xl font-bold text-center mb-8 text-gray-700">
+                            {num1} - {num2} = ?
+                          </div>
+
+                          <form onSubmit={handleSubmit} className="space-y-4">
+                            <input
+                              type="number"
+                              value={userAnswer}
+                              onChange={(e) => setUserAnswer(e.target.value)}
+                              className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all duration-200"
+                              placeholder="Your answer"
+                              ref={inputRef}
+                            />
+                            <button
+                              type="submit"
+                              className="w-full py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 bg-green-600/70 hover:bg-green-700/80 text-white backdrop-blur"
+                            >
+                              Submit Answer
+                            </button>
+                          </form>
+
+                          {/* Game History */}
+                          <div className="flex gap-1 mt-6 justify-center">
+                            {gameHistory.map((result, index) => (
+                              <div
+                                key={index}
+                                className={`w-3 h-3 rounded-full ${
+                                  result === 'correct' ? 'bg-green-500' : 'bg-red-500'
+                                }`}
+                              />
+                            ))}
                           </div>
                         </div>
                       )}

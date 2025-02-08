@@ -40,6 +40,9 @@ const Game: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showStats, setShowStats] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedNumber, setSelectedNumber] = useState<number | undefined>();
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
+  const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
 
   useEffect(() => {
     console.log('User data:', {
@@ -105,8 +108,55 @@ const Game: React.FC = () => {
   }, [showStats]);
 
   const generateQuestion = () => {
-    setNum1(Math.floor(Math.random() * 11) + 2);
-    setNum2(Math.floor(Math.random() * 11) + 2);
+    // If a number is selected, use it as one of the factors
+    let newNum1: number;
+    let newNum2: number;
+
+    // Get max range based on difficulty
+    let maxRange;
+    switch (difficulty) {
+      case 'easy':
+        maxRange = 10;
+        break;
+      case 'medium':
+        maxRange = 20;
+        break;
+      case 'hard':
+        maxRange = 30;
+        break;
+      default:
+        maxRange = 10;
+    }
+
+    // Keep track of available numbers that haven't been used yet
+    let availableNumbers = Array.from({ length: maxRange }, (_, i) => i + 1)
+      .filter(num => !usedNumbers.includes(num));
+
+    // If all numbers have been used, reset the usedNumbers array
+    if (availableNumbers.length === 0) {
+      setUsedNumbers([]);
+      availableNumbers = Array.from({ length: maxRange }, (_, i) => i + 1);
+    }
+
+    // Select a random number from available numbers
+    const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+    const randomNumber = availableNumbers[randomIndex];
+
+    // Add the number to used numbers
+    setUsedNumbers(prev => [...prev, randomNumber]);
+
+    if (selectedNumber) {
+      // If a number is selected, use it as num1 and generate random num2
+      newNum1 = selectedNumber;
+      newNum2 = randomNumber;
+    } else {
+      // If no number is selected, generate both numbers randomly
+      newNum1 = Math.floor(Math.random() * 9) + 1;
+      newNum2 = randomNumber;
+    }
+
+    setNum1(newNum1);
+    setNum2(newNum2);
     setUserAnswer('');
   };
 
@@ -182,7 +232,15 @@ const Game: React.FC = () => {
 
   const startGame = () => {
     setIsGameStarted(true);
-    setTime(0);
+    setStartTime(new Date());
+    setUsedNumbers([]); // Reset used numbers when starting new game
+    generateQuestion();
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    timerRef.current = setInterval(() => {
+      setTime(prev => prev + 1);
+    }, 1000);
   };
 
   const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -312,12 +370,71 @@ const Game: React.FC = () => {
                           <img 
                             src="/multiplication.png" 
                             alt="Multiplication" 
-                            className={gameStyles.gameContent.startScreen.image}
+                            className="w-48 h-48 object-contain mx-auto mb-4"
                           />
-                          <h1 className={gameStyles.gameContent.startScreen.title}>Multiplication Challenge</h1>
+                          {/* <h1 className={gameStyles.gameContent.startScreen.title}>Multiplication Challenge</h1> */}
+
+                          {/* Number Selection */}
+                          <div className="mb-6">
+                            <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
+                              Select a Number (Optional)
+                            </label>
+                            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[320px] mx-auto">
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                                <div key={num} className="flex items-center justify-center">
+                                  <button
+                                    onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
+                                    className={`
+                                      w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-base sm:text-lg font-semibold
+                                      transition-all duration-200 ease-in-out
+                                      ${selectedNumber === num 
+                                        ? 'bg-blue-500 text-white shadow-lg scale-110' 
+                                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-500 hover:text-blue-500'}
+                                    `}
+                                  >
+                                    {num}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-2 text-center">
+                              {selectedNumber === undefined ? (
+                                <p className="text-sm text-gray-500">
+                                  No number selected - using random numbers
+                                </p>
+                              ) : (
+                                <p className="text-sm text-blue-600">
+                                  Practice multiplying by {selectedNumber}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Difficulty Selection */}
+                          <div className="mb-6">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                              Difficulty Level
+                            </label>
+                            <div className="flex gap-2">
+                              {['easy', 'medium', 'hard'].map((d) => (
+                                <button
+                                  key={d}
+                                  className={`flex-1 py-2 px-4 rounded-lg capitalize ${
+                                    difficulty === d
+                                      ? 'bg-blue-500 text-white'
+                                      : 'bg-gray-200 text-gray-700'
+                                  } hover:bg-blue-400 hover:text-white transition-colors`}
+                                  onClick={() => setDifficulty(d as 'easy' | 'medium' | 'hard')}
+                                >
+                                  {d}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           <button
                             onClick={startGame}
-                            className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.multiplication.button}`}
+                            className="px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 flex items-center space-x-2 mx-auto text-sm sm:text-base bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur"
                           >
                             <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                             <span>Start Game</span>
@@ -325,54 +442,73 @@ const Game: React.FC = () => {
                         </div>
                       ) : (
                         <div className={gameStyles.gameContent.gameScreen.wrapper}>
-                          <div className={gameStyles.gameContent.gameScreen.inner}>
-                            <div className={gameStyles.gameContent.gameScreen.content}>
-                              {/* Progress Bar */}
-                              <div className={gameStyles.gameContent.progressBar.wrapper}>
-                                <div 
-                                  className={gameStyles.gameContent.progressBar.inner}
-                                  style={{ 
-                                    width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
-                                    background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
-                                    animation: 'shimmer 2s linear infinite'
-                                  }}
-                                />
-                              </div>
-                              <style>
-                                {`
-                                  @keyframes shimmer {
-                                    0% { background-position: 200% center; }
-                                    100% { background-position: -200% center; }
-                                  }
-                                `}
-                              </style>
-                              <div className="mb-4 sm:mb-8">
-                                <img 
-                                  src="/multiplication.png" 
-                                  alt="Multiplication" 
-                                  className={gameStyles.gameContent.startScreen.image}
-                                />
-                              </div>
-                              <div className={gameStyles.gameContent.gameScreen.equation}>
-                                {num1} × {num2}
-                              </div>
-                              <form onSubmit={handleSubmit} className="space-y-4">
-                                <input
-                                  type="number"
-                                  value={userAnswer}
-                                  onChange={(e) => setUserAnswer(e.target.value)}
-                                  className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.multiplication.focus}`}
-                                  placeholder="Your answer"
-                                  ref={inputRef}
-                                />
-                                <button
-                                  type="submit"
-                                  className={`${gameStyles.gameContent.gameScreen.submitButton} ${gameColors.multiplication.button}`}
-                                >
-                                  Submit Answer
-                                </button>
-                              </form>
+                          {/* Progress Bar */}
+                          <div className={gameStyles.gameContent.progressBar.wrapper}>
+                            <div 
+                              className={gameStyles.gameContent.progressBar.inner}
+                              style={{ 
+                                width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
+                                background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
+                                animation: 'shimmer 2s linear infinite'
+                              }}
+                            />
+                          </div>
+                          <style>
+                            {`
+                              @keyframes shimmer {
+                                0% { background-position: 200% center; }
+                                100% { background-position: -200% center; }
+                              }
+                            `}
+                          </style>
+
+                          <div className="flex justify-between mb-6 text-gray-600 font-medium">
+                            <div>Score: {score}</div>
+                            <div>Time: {formatTime(time)}</div>
+                            <div>
+                              Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}
                             </div>
+                          </div>
+
+                          <div className="mb-4 sm:mb-8">
+                            <img 
+                              src="/multiplication.png" 
+                              alt="Multiplication" 
+                              className="w-48 h-48 object-contain mx-auto mb-2"
+                            />
+                          </div>
+
+                          <div className="text-4xl font-bold text-center mb-8 text-gray-700">
+                            {num1} × {num2} = ?
+                          </div>
+
+                          <form onSubmit={handleSubmit} className="space-y-4">
+                            <input
+                              type="number"
+                              value={userAnswer}
+                              onChange={(e) => setUserAnswer(e.target.value)}
+                              className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200"
+                              placeholder="Your answer"
+                              ref={inputRef}
+                            />
+                            <button
+                              type="submit"
+                              className="w-full py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur"
+                            >
+                              Submit Answer
+                            </button>
+                          </form>
+
+                          {/* Game History */}
+                          <div className="flex gap-1 mt-6 justify-center">
+                            {gameHistory.map((result, index) => (
+                              <div
+                                key={index}
+                                className={`w-3 h-3 rounded-full ${
+                                  result === 'correct' ? 'bg-green-500' : 'bg-red-500'
+                                }`}
+                              />
+                            ))}
                           </div>
                         </div>
                       )}
