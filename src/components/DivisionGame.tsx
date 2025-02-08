@@ -13,6 +13,12 @@ const getInitials = (firstName: string = '', lastName: string = '') => {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 };
 
+const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
 const DivisionGame: React.FC = () => {
   const navigate = useNavigate();
   const { user, setUser } = useContext(UserContext);
