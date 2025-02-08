@@ -505,7 +505,7 @@ const Game: React.FC = () => {
                               <div
                                 key={index}
                                 className={`w-3 h-3 rounded-full ${
-                                  result === 'correct' ? 'bg-green-500' : 'bg-red-500'
+                                  result.includes('Correct') ? 'bg-green-500' : 'bg-red-500'
                                 }`}
                               />
                             ))}
