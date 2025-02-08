@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
 import { jsPDF } from 'jspdf';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle2, XCircle } from 'lucide-react';
 
 interface LocationState {
   score: number;
@@ -122,19 +122,47 @@ const Proof: React.FC = () => {
             {/* Game History */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-xl font-semibold mb-4 text-gray-800">Answer History:</h3>
-              <div className="grid gap-2">
-                {gameHistory.map((result, index) => (
-                  <div 
-                    key={index}
-                    className={`p-3 rounded-lg text-sm font-medium ${
-                      result.includes('Correct') 
-                        ? 'bg-green-100 text-green-800 border border-green-200' 
-                        : 'bg-red-100 text-red-800 border border-red-200'
-                    }`}
-                  >
-                    {result}
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 gap-3">
+                {gameHistory.map((result, index) => {
+                  const isCorrect = result.includes('Correct');
+                  const [equation, answer] = result.split(' = ');
+                  const correctAnswer = isCorrect 
+                    ? answer.split(' ')[0]
+                    : answer.split('was ')[1].split(')')[0];
+                  const userAnswer = isCorrect 
+                    ? correctAnswer 
+                    : answer.split(' ')[0];
+
+                  return (
+                    <div 
+                      key={index}
+                      className={`flex items-center p-3 rounded-lg text-sm font-medium ${
+                        isCorrect 
+                          ? 'bg-green-50 text-green-800 border border-green-200' 
+                          : 'bg-red-50 text-red-800 border border-red-200'
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <span className="font-semibold">{equation} = </span>
+                        <span className={isCorrect ? 'text-green-600' : 'text-red-600'}>
+                          {userAnswer}
+                        </span>
+                        {!isCorrect && (
+                          <span className="text-gray-500 ml-2">
+                            (correct: {correctAnswer})
+                          </span>
+                        )}
+                      </div>
+                      <div className="ml-2">
+                        {isCorrect ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-red-500" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
