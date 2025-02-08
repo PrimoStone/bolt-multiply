@@ -351,16 +351,18 @@ const Addition = () => {
                     <label className="block text-gray-700 text-sm font-bold mb-4">
                       Select a Number (Optional)
                     </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+                    <div className="grid grid-cols-4 gap-4 mb-6">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
                         <button
                           key={num}
                           onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
-                          className={`py-2 px-4 rounded-lg ${
-                            selectedNumber === num
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-700'
-                          } hover:bg-blue-400 hover:text-white transition-colors`}
+                          className={`
+                            w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold
+                            transition-all duration-200 ease-in-out
+                            ${selectedNumber === num 
+                              ? 'bg-blue-500 text-white shadow-lg scale-110' 
+                              : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-500 hover:text-blue-500'}
+                          `}
                         >
                           {num}
                         </button>

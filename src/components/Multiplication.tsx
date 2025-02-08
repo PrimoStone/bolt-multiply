@@ -338,31 +338,23 @@ const Multiplication = () => {
                   />
                   <h1 className={gameStyles.gameContent.startScreen.title}>Multiplication Challenge</h1>
                   
-                  {/* Number Selection */}
-                  <div className="mb-8">
-                    <label className="block text-gray-700 text-sm font-bold mb-4">
-                      Select a Number (Optional)
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                        <button
-                          key={num}
-                          onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
-                          className={`py-2 px-4 rounded-lg ${
-                            selectedNumber === num
-                              ? 'bg-purple-500 text-white'
-                              : 'bg-gray-200 text-gray-700'
-                          } hover:bg-purple-400 hover:text-white transition-colors`}
-                        >
-                          {num}
-                        </button>
-                      ))}
-                    </div>
-                    {selectedNumber === undefined && (
-                      <p className="text-sm text-gray-500 mt-2">
-                        No number selected - using random numbers
-                      </p>
-                    )}
+                  {/* Number selection grid */}
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
+                        className={`
+                          w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold
+                          transition-all duration-200 ease-in-out
+                          ${selectedNumber === num 
+                            ? 'bg-yellow-500 text-white shadow-lg scale-110' 
+                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-yellow-500 hover:text-yellow-500'}
+                        `}
+                      >
+                        {num}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Difficulty Selection */}
