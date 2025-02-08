@@ -17,12 +17,6 @@ interface Question {
   num2: number;
 }
 
-const TOTAL_QUESTIONS = 20;
-
-const getInitials = (firstName: string = '', lastName: string = '') => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-};
-
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -40,27 +34,27 @@ const generateQuestionsArray = (
   const questions: Question[] = [];
   
   if (selectedNumber !== undefined) {
-    // Fixed number mode - selected number is always first
+    // Fixed number mode
     const fixedNum = selectedNumber;
-    let maxSecond: number;
+    let maxMultiplier: number;
     
     switch (difficulty) {
       case 'easy':
-        maxSecond = 10; // Sum up to 20
+        maxMultiplier = 3;
         break;
       case 'medium':
-        maxSecond = 20; // Sum up to 30
+        maxMultiplier = 6;
         break;
       case 'hard':
-        maxSecond = 50; // Sum up to 60
+        maxMultiplier = 12;
         break;
       default:
-        maxSecond = 10;
+        maxMultiplier = 3;
     }
     
     // Generate all possible combinations
     const possibleQuestions: Question[] = [];
-    for (let i = 1; i <= maxSecond; i++) {
+    for (let i = 1; i <= maxMultiplier; i++) {
       possibleQuestions.push({ num1: fixedNum, num2: i });
     }
     
@@ -75,27 +69,23 @@ const generateQuestionsArray = (
     let max: number;
     switch (difficulty) {
       case 'easy':
-        max = 10; // Numbers 1-10, sum up to 20
+        max = 6;
         break;
       case 'medium':
-        max = 15; // Numbers 1-15, sum up to 30
+        max = 9;
         break;
       case 'hard':
-        max = 30; // Numbers 1-30, sum up to 60
+        max = 12;
         break;
       default:
-        max = 10;
+        max = 6;
     }
     
     // Generate all possible combinations within the range
     const possibleQuestions: Question[] = [];
     for (let i = 1; i <= max; i++) {
       for (let j = 1; j <= max; j++) {
-        // For addition, order doesn't matter (5+3 is same as 3+5)
-        // So we'll only add one combination to avoid duplicates
-        if (i <= j) {
-          possibleQuestions.push({ num1: i, num2: j });
-        }
+        possibleQuestions.push({ num1: i, num2: j });
       }
     }
     
@@ -111,16 +101,12 @@ const generateQuestionsArray = (
   
   // Ensure no consecutive repeats by reshuffling if necessary
   for (let i = 1; i < finalQuestions.length; i++) {
-    if ((finalQuestions[i].num1 === finalQuestions[i-1].num1 && 
-         finalQuestions[i].num2 === finalQuestions[i-1].num2) ||
-        (finalQuestions[i].num1 === finalQuestions[i-1].num2 && 
-         finalQuestions[i].num2 === finalQuestions[i-1].num1)) {
+    if (finalQuestions[i].num1 === finalQuestions[i-1].num1 && 
+        finalQuestions[i].num2 === finalQuestions[i-1].num2) {
       // If we find a repeat, swap with the next non-repeating question
       for (let j = i + 1; j < finalQuestions.length; j++) {
-        if ((finalQuestions[j].num1 !== finalQuestions[i-1].num1 || 
-             finalQuestions[j].num2 !== finalQuestions[i-1].num2) &&
-            (finalQuestions[j].num1 !== finalQuestions[i-1].num2 || 
-             finalQuestions[j].num2 !== finalQuestions[i-1].num1)) {
+        if (finalQuestions[j].num1 !== finalQuestions[i-1].num1 || 
+            finalQuestions[j].num2 !== finalQuestions[i-1].num2) {
           [finalQuestions[i], finalQuestions[j]] = [finalQuestions[j], finalQuestions[i]];
           break;
         }
@@ -131,7 +117,13 @@ const generateQuestionsArray = (
   return finalQuestions;
 };
 
-const Addition = () => {
+const TOTAL_QUESTIONS = 20;
+
+const getInitials = (firstName: string = '', lastName: string = '') => {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
+const Multiplication = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
   const [num1, setNum1] = useState(0);
@@ -148,7 +140,7 @@ const Addition = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'addition');
+  const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'multiplication');
   const [showStats, setShowStats] = useState(false);
 
   // Game configuration
@@ -241,7 +233,7 @@ const Addition = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const answer = parseInt(userAnswer);
-    const isCorrect = answer === num1 + num2;
+    const isCorrect = answer === num1 * num2;
     
     if (isCorrect) {
       setScore(prev => prev + 1);
@@ -259,7 +251,7 @@ const Addition = () => {
       
       if (user?.id) {
         await saveGameStats(user.id, {
-          gameType: 'addition',
+          gameType: 'multiplication',
           score,
           totalQuestions: TOTAL_QUESTIONS,
           timeSpent,
@@ -340,11 +332,11 @@ const Addition = () => {
               {!isGameStarted ? (
                 <div className={gameStyles.gameContent.startScreen.wrapper}>
                   <img
-                    src="/addition.png"
-                    alt="Addition"
+                    src="/multiplication.png"
+                    alt="Multiplication"
                     className={gameStyles.gameContent.startScreen.image}
                   />
-                  <h1 className={gameStyles.gameContent.startScreen.title}>Addition Challenge</h1>
+                  <h1 className={gameStyles.gameContent.startScreen.title}>Multiplication Challenge</h1>
                   
                   {/* Number Selection */}
                   <div className="mb-8">
@@ -358,9 +350,9 @@ const Addition = () => {
                           onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
                           className={`py-2 px-4 rounded-lg ${
                             selectedNumber === num
-                              ? 'bg-blue-500 text-white'
+                              ? 'bg-purple-500 text-white'
                               : 'bg-gray-200 text-gray-700'
-                          } hover:bg-blue-400 hover:text-white transition-colors`}
+                          } hover:bg-purple-400 hover:text-white transition-colors`}
                         >
                           {num}
                         </button>
@@ -384,9 +376,9 @@ const Addition = () => {
                           key={d}
                           className={`flex-1 py-2 px-4 rounded-lg capitalize ${
                             difficulty === d
-                              ? 'bg-blue-500 text-white'
+                              ? 'bg-purple-500 text-white'
                               : 'bg-gray-200 text-gray-700'
-                          } hover:bg-blue-400 hover:text-white transition-colors`}
+                          } hover:bg-purple-400 hover:text-white transition-colors`}
                           onClick={() => setDifficulty(d as GameDifficulty)}
                         >
                           {d}
@@ -397,7 +389,7 @@ const Addition = () => {
 
                   <button
                     onClick={startGame}
-                    className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.addition.button}`}
+                    className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.multiplication.button}`}
                   >
                     <PlayIcon className="mr-2" />
                     Start Game
@@ -409,7 +401,7 @@ const Addition = () => {
                     {/* Game Progress */}
                     <div className={gameStyles.gameContent.progressBar.wrapper}>
                       <div
-                        className={`${gameStyles.gameContent.progressBar.inner} ${gameColors.addition.gradient}`}
+                        className={`${gameStyles.gameContent.progressBar.inner} ${gameColors.multiplication.gradient}`}
                         style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
                       />
                     </div>
@@ -426,7 +418,7 @@ const Addition = () => {
 
                       {/* Game Question */}
                       <div className={gameStyles.gameContent.gameScreen.equation}>
-                        {num1} + {num2} = ?
+                        {num1} × {num2} = ?
                       </div>
 
                       {/* Answer Form */}
@@ -436,13 +428,13 @@ const Addition = () => {
                           type="number"
                           value={userAnswer}
                           onChange={(e) => setUserAnswer(e.target.value)}
-                          className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.addition.focus}`}
+                          className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.multiplication.focus}`}
                           placeholder="Enter your answer"
                           autoFocus
                         />
                         <button
                           type="submit"
-                          className={`${gameStyles.gameContent.gameScreen.submitButton} ${gameColors.addition.button}`}
+                          className={`${gameStyles.gameContent.gameScreen.submitButton} ${gameColors.multiplication.button}`}
                         >
                           Check Answer
                         </button>
@@ -489,4 +481,4 @@ const Addition = () => {
   );
 };
 
-export default Addition;
+export default Multiplication;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, BarChart2, LogOut, PlayIcon, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import StatsModal from './StatsModal';
@@ -12,6 +12,112 @@ import { db } from '../firebase/config';
 import { useUserStats } from '../hooks/useUserStats';
 import { Award, X } from 'lucide-react';
 
+interface Question {
+  num1: number;
+  num2: number;
+}
+
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+const generateQuestionsArray = (
+  selectedNumber: number | undefined,
+  difficulty: GameDifficulty,
+  totalQuestions: number
+): Question[] => {
+  const questions: Question[] = [];
+  
+  if (selectedNumber !== undefined) {
+    // Fixed number mode - selected number is always first (minuend)
+    const fixedNum = selectedNumber;
+    let maxSubtrahend: number;
+    
+    switch (difficulty) {
+      case 'easy':
+        maxSubtrahend = Math.min(10, fixedNum - 1); // Result at least 1
+        break;
+      case 'medium':
+        maxSubtrahend = Math.min(20, fixedNum - 1);
+        break;
+      case 'hard':
+        maxSubtrahend = Math.min(50, fixedNum - 1);
+        break;
+      default:
+        maxSubtrahend = Math.min(10, fixedNum - 1);
+    }
+    
+    // Generate all possible combinations
+    const possibleQuestions: Question[] = [];
+    for (let i = 1; i <= maxSubtrahend; i++) {
+      possibleQuestions.push({ num1: fixedNum, num2: i });
+    }
+    
+    // If we need more questions than possible combinations, we'll need to repeat
+    while (questions.length < totalQuestions) {
+      const shuffledBatch = shuffleArray([...possibleQuestions]);
+      questions.push(...shuffledBatch);
+    }
+    
+  } else {
+    // Random mode
+    let maxMinuend: number;
+    switch (difficulty) {
+      case 'easy':
+        maxMinuend = 20; // Numbers 1-20
+        break;
+      case 'medium':
+        maxMinuend = 50; // Numbers 1-50
+        break;
+      case 'hard':
+        maxMinuend = 100; // Numbers 1-100
+        break;
+      default:
+        maxMinuend = 20;
+    }
+    
+    // Generate all possible combinations within the range
+    const possibleQuestions: Question[] = [];
+    for (let minuend = 2; minuend <= maxMinuend; minuend++) {
+      // Subtrahend must be less than minuend to ensure positive result
+      for (let subtrahend = 1; subtrahend < minuend; subtrahend++) {
+        possibleQuestions.push({ num1: minuend, num2: subtrahend });
+      }
+    }
+    
+    // If we need more questions than possible combinations, we'll need to repeat
+    while (questions.length < totalQuestions) {
+      const shuffledBatch = shuffleArray([...possibleQuestions]);
+      questions.push(...shuffledBatch);
+    }
+  }
+  
+  // Take only the number of questions we need
+  const finalQuestions = questions.slice(0, totalQuestions);
+  
+  // Ensure no consecutive repeats by reshuffling if necessary
+  for (let i = 1; i < finalQuestions.length; i++) {
+    if (finalQuestions[i].num1 === finalQuestions[i-1].num1 && 
+        finalQuestions[i].num2 === finalQuestions[i-1].num2) {
+      // If we find a repeat, swap with the next non-repeating question
+      for (let j = i + 1; j < finalQuestions.length; j++) {
+        if (finalQuestions[j].num1 !== finalQuestions[i-1].num1 || 
+            finalQuestions[j].num2 !== finalQuestions[i-1].num2) {
+          [finalQuestions[i], finalQuestions[j]] = [finalQuestions[j], finalQuestions[i]];
+          break;
+        }
+      }
+    }
+  }
+  
+  return finalQuestions;
+};
+
 const TOTAL_QUESTIONS = 20;
 
 const getInitials = (firstName: string = '', lastName: string = '') => {
@@ -21,6 +127,7 @@ const getInitials = (firstName: string = '', lastName: string = '') => {
 const Subtraction = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [num1, setNum1] = useState(0);
   const [num2, setNum2] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
@@ -37,6 +144,12 @@ const Subtraction = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'subtraction');
   const [showStats, setShowStats] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+  // Game configuration
+  const [selectedNumber, setSelectedNumber] = useState<number | undefined>();
+  const [difficulty, setDifficulty] = useState<GameDifficulty>('easy');
 
   const renderAvatar = () => {
     if (user?.photoURL) {
@@ -59,7 +172,6 @@ const Subtraction = () => {
     if (!user) {
       navigate('/');
     } else {
-      generateQuestion();
       setStartTime(new Date());
     }
   }, [user, navigate]);
@@ -83,55 +195,83 @@ const Subtraction = () => {
 
   const startGame = () => {
     setIsGameStarted(true);
-    setStartTime(new Date());
-    generateQuestion();
+    setScore(0);
+    setQuestionsAnswered(0);
+    setCurrentQuestionIndex(0);
+    setGameHistory([]);
+    
+    // Generate all questions at once
+    const newQuestions = generateQuestionsArray(selectedNumber, difficulty, TOTAL_QUESTIONS);
+    setQuestions(newQuestions);
+    
+    // Set initial question
+    const firstQuestion = newQuestions[0];
+    setNum1(firstQuestion.num1);
+    setNum2(firstQuestion.num2);
+    
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTime(prev => prev + 1);
     }, 1000);
   };
 
-  const generateQuestion = () => {
-    let newNum1 = Math.floor(Math.random() * 20) + 1;
-    let newNum2 = Math.floor(Math.random() * newNum1) + 1;
-    setNum1(newNum1);
-    setNum2(newNum2);
-    setUserAnswer('');
+  const moveToNextQuestion = () => {
+    const nextIndex = currentQuestionIndex + 1;
+    if (nextIndex < questions.length) {
+      setCurrentQuestionIndex(nextIndex);
+      const nextQuestion = questions[nextIndex];
+      setNum1(nextQuestion.num1);
+      setNum2(nextQuestion.num2);
+      setUserAnswer('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleAnswer();
+    const answer = parseInt(userAnswer);
+    const isCorrect = answer === num1 - num2;
+    
+    if (isCorrect) {
+      setScore(prev => prev + 1);
+      setGameHistory(prev => [...prev, 'correct']);
+    } else {
+      setGameHistory(prev => [...prev, 'incorrect']);
+    }
+    
+    setQuestionsAnswered(prev => prev + 1);
+    setUserAnswer('');
+    
+    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
+      const endTime = new Date();
+      const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      
+      if (user?.id) {
+        await saveGameStats(user.id, {
+          gameType: 'subtraction',
+          score,
+          totalQuestions: TOTAL_QUESTIONS,
+          timeSpent,
+          difficulty,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Reset game
+      setIsGameStarted(false);
+      setTime(0);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      await refreshStats();
+    } else {
+      moveToNextQuestion();
+    }
   };
 
   const handleKeyPress = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      await handleAnswer();
-    }
-  };
-
-  const handleAnswer = async () => {
-    if (!userAnswer) return;
-
-    const correctAnswer = num1 - num2;
-    const isCorrect = parseInt(userAnswer) === correctAnswer;
-    
-    if (isCorrect) {
-      setScore(score + 1);
-    }
-
-    const historyEntry = `${num1} - ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect'})`;
-    setGameHistory([...gameHistory, historyEntry]);
-    setUserAnswer('');
-    
-    const newQuestionsAnswered = questionsAnswered + 1;
-    setQuestionsAnswered(newQuestionsAnswered);
-
-    if (newQuestionsAnswered >= TOTAL_QUESTIONS) {
-      await handleGameEnd();
-    } else {
-      generateQuestion();
+      await handleSubmit(e);
     }
   };
 
@@ -299,6 +439,51 @@ const Subtraction = () => {
                             className={gameStyles.gameContent.startScreen.image}
                           />
                           <h1 className={gameStyles.gameContent.startScreen.title}>Subtraction Challenge</h1>
+                          <div className="mb-8">
+                            <label className="block text-gray-700 text-sm font-bold mb-4">
+                              Select a Number (Optional)
+                            </label>
+                            <div className="grid grid-cols-4 gap-2">
+                              {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+                                <button
+                                  key={num}
+                                  onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
+                                  className={`py-2 px-4 rounded-lg ${
+                                    selectedNumber === num
+                                      ? 'bg-blue-500 text-white'
+                                      : 'bg-gray-200 text-gray-700'
+                                  } hover:bg-blue-400 hover:text-white transition-colors`}
+                                >
+                                  {num}
+                                </button>
+                              ))}
+                            </div>
+                            {selectedNumber === undefined && (
+                              <p className="text-sm text-gray-500 mt-2">
+                                No number selected - using random numbers
+                              </p>
+                            )}
+                          </div>
+                          <div className="mb-8">
+                            <label className="block text-gray-700 text-sm font-bold mb-4">
+                              Difficulty Level
+                            </label>
+                            <div className="flex gap-2">
+                              {['easy', 'medium', 'hard'].map((d) => (
+                                <button
+                                  key={d}
+                                  className={`flex-1 py-2 px-4 rounded-lg capitalize ${
+                                    difficulty === d
+                                      ? 'bg-blue-500 text-white'
+                                      : 'bg-gray-200 text-gray-700'
+                                  } hover:bg-blue-400 hover:text-white transition-colors`}
+                                  onClick={() => setDifficulty(d as GameDifficulty)}
+                                >
+                                  {d}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                           <button
                             onClick={startGame}
                             className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.subtraction.button}`}
@@ -348,6 +533,7 @@ const Subtraction = () => {
                                   className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.subtraction.focus}`}
                                   placeholder="Your answer"
                                   ref={inputRef}
+                                  onKeyPress={handleKeyPress}
                                 />
                                 <button
                                   type="submit"

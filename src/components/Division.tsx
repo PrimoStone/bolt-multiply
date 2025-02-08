@@ -13,15 +13,9 @@ import { useUserStats } from '../hooks/useUserStats';
 import { GameDifficulty } from '../types/gameConfig';
 
 interface Question {
-  num1: number;
-  num2: number;
+  dividend: number;
+  divisor: number;
 }
-
-const TOTAL_QUESTIONS = 20;
-
-const getInitials = (firstName: string = '', lastName: string = '') => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-};
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
@@ -40,28 +34,31 @@ const generateQuestionsArray = (
   const questions: Question[] = [];
   
   if (selectedNumber !== undefined) {
-    // Fixed number mode - selected number is always first
+    // Fixed number mode - selected number is always the divisor
     const fixedNum = selectedNumber;
-    let maxSecond: number;
+    let maxMultiplier: number;
     
     switch (difficulty) {
       case 'easy':
-        maxSecond = 10; // Sum up to 20
+        maxMultiplier = 3; // max dividend 36
         break;
       case 'medium':
-        maxSecond = 20; // Sum up to 30
+        maxMultiplier = 6; // max dividend 72
         break;
       case 'hard':
-        maxSecond = 50; // Sum up to 60
+        maxMultiplier = 12; // max dividend 144
         break;
       default:
-        maxSecond = 10;
+        maxMultiplier = 3;
     }
     
     // Generate all possible combinations
     const possibleQuestions: Question[] = [];
-    for (let i = 1; i <= maxSecond; i++) {
-      possibleQuestions.push({ num1: fixedNum, num2: i });
+    for (let i = 1; i <= maxMultiplier; i++) {
+      possibleQuestions.push({ 
+        divisor: fixedNum,
+        dividend: fixedNum * i
+      });
     }
     
     // If we need more questions than possible combinations, we'll need to repeat
@@ -72,30 +69,35 @@ const generateQuestionsArray = (
     
   } else {
     // Random mode
-    let max: number;
+    let maxDivisor: number;
+    let maxMultiplier: number;
+    
     switch (difficulty) {
       case 'easy':
-        max = 10; // Numbers 1-10, sum up to 20
+        maxDivisor = 6;
+        maxMultiplier = 6; // Result will be 1-6 (max 36)
         break;
       case 'medium':
-        max = 15; // Numbers 1-15, sum up to 30
+        maxDivisor = 9;
+        maxMultiplier = 8; // Result will be 1-8 (max 72)
         break;
       case 'hard':
-        max = 30; // Numbers 1-30, sum up to 60
+        maxDivisor = 12;
+        maxMultiplier = 12; // Result will be 1-12 (max 144)
         break;
       default:
-        max = 10;
+        maxDivisor = 6;
+        maxMultiplier = 6;
     }
     
-    // Generate all possible combinations within the range
+    // Generate all possible combinations
     const possibleQuestions: Question[] = [];
-    for (let i = 1; i <= max; i++) {
-      for (let j = 1; j <= max; j++) {
-        // For addition, order doesn't matter (5+3 is same as 3+5)
-        // So we'll only add one combination to avoid duplicates
-        if (i <= j) {
-          possibleQuestions.push({ num1: i, num2: j });
-        }
+    for (let divisor = 1; divisor <= maxDivisor; divisor++) {
+      for (let multiplier = 1; multiplier <= maxMultiplier; multiplier++) {
+        possibleQuestions.push({
+          divisor: divisor,
+          dividend: divisor * multiplier
+        });
       }
     }
     
@@ -111,16 +113,12 @@ const generateQuestionsArray = (
   
   // Ensure no consecutive repeats by reshuffling if necessary
   for (let i = 1; i < finalQuestions.length; i++) {
-    if ((finalQuestions[i].num1 === finalQuestions[i-1].num1 && 
-         finalQuestions[i].num2 === finalQuestions[i-1].num2) ||
-        (finalQuestions[i].num1 === finalQuestions[i-1].num2 && 
-         finalQuestions[i].num2 === finalQuestions[i-1].num1)) {
+    if (finalQuestions[i].dividend === finalQuestions[i-1].dividend && 
+        finalQuestions[i].divisor === finalQuestions[i-1].divisor) {
       // If we find a repeat, swap with the next non-repeating question
       for (let j = i + 1; j < finalQuestions.length; j++) {
-        if ((finalQuestions[j].num1 !== finalQuestions[i-1].num1 || 
-             finalQuestions[j].num2 !== finalQuestions[i-1].num2) &&
-            (finalQuestions[j].num1 !== finalQuestions[i-1].num2 || 
-             finalQuestions[j].num2 !== finalQuestions[i-1].num1)) {
+        if (finalQuestions[j].dividend !== finalQuestions[i-1].dividend || 
+            finalQuestions[j].divisor !== finalQuestions[i-1].divisor) {
           [finalQuestions[i], finalQuestions[j]] = [finalQuestions[j], finalQuestions[i]];
           break;
         }
@@ -131,11 +129,17 @@ const generateQuestionsArray = (
   return finalQuestions;
 };
 
-const Addition = () => {
+const TOTAL_QUESTIONS = 20;
+
+const getInitials = (firstName: string = '', lastName: string = '') => {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
+const Division = () => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
-  const [num1, setNum1] = useState(0);
-  const [num2, setNum2] = useState(0);
+  const [dividend, setDividend] = useState(0);
+  const [divisor, setDivisor] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
   const [score, setScore] = useState(0);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
@@ -148,7 +152,7 @@ const Addition = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'addition');
+  const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'division');
   const [showStats, setShowStats] = useState(false);
 
   // Game configuration
@@ -218,8 +222,8 @@ const Addition = () => {
     
     // Set initial question
     const firstQuestion = newQuestions[0];
-    setNum1(firstQuestion.num1);
-    setNum2(firstQuestion.num2);
+    setDivisor(firstQuestion.divisor);
+    setDividend(firstQuestion.dividend);
     
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -232,8 +236,8 @@ const Addition = () => {
     if (nextIndex < questions.length) {
       setCurrentQuestionIndex(nextIndex);
       const nextQuestion = questions[nextIndex];
-      setNum1(nextQuestion.num1);
-      setNum2(nextQuestion.num2);
+      setDivisor(nextQuestion.divisor);
+      setDividend(nextQuestion.dividend);
       setUserAnswer('');
     }
   };
@@ -241,7 +245,7 @@ const Addition = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const answer = parseInt(userAnswer);
-    const isCorrect = answer === num1 + num2;
+    const isCorrect = answer === dividend / divisor;
     
     if (isCorrect) {
       setScore(prev => prev + 1);
@@ -259,7 +263,7 @@ const Addition = () => {
       
       if (user?.id) {
         await saveGameStats(user.id, {
-          gameType: 'addition',
+          gameType: 'division',
           score,
           totalQuestions: TOTAL_QUESTIONS,
           timeSpent,
@@ -340,16 +344,16 @@ const Addition = () => {
               {!isGameStarted ? (
                 <div className={gameStyles.gameContent.startScreen.wrapper}>
                   <img
-                    src="/addition.png"
-                    alt="Addition"
+                    src="/division.png"
+                    alt="Division"
                     className={gameStyles.gameContent.startScreen.image}
                   />
-                  <h1 className={gameStyles.gameContent.startScreen.title}>Addition Challenge</h1>
+                  <h1 className={gameStyles.gameContent.startScreen.title}>Division Challenge</h1>
                   
                   {/* Number Selection */}
                   <div className="mb-8">
                     <label className="block text-gray-700 text-sm font-bold mb-4">
-                      Select a Number (Optional)
+                      Select a Divisor (Optional)
                     </label>
                     <div className="grid grid-cols-4 gap-2">
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
@@ -358,9 +362,9 @@ const Addition = () => {
                           onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
                           className={`py-2 px-4 rounded-lg ${
                             selectedNumber === num
-                              ? 'bg-blue-500 text-white'
+                              ? 'bg-orange-500 text-white'
                               : 'bg-gray-200 text-gray-700'
-                          } hover:bg-blue-400 hover:text-white transition-colors`}
+                          } hover:bg-orange-400 hover:text-white transition-colors`}
                         >
                           {num}
                         </button>
@@ -368,7 +372,7 @@ const Addition = () => {
                     </div>
                     {selectedNumber === undefined && (
                       <p className="text-sm text-gray-500 mt-2">
-                        No number selected - using random numbers
+                        No divisor selected - using random numbers
                       </p>
                     )}
                   </div>
@@ -384,9 +388,9 @@ const Addition = () => {
                           key={d}
                           className={`flex-1 py-2 px-4 rounded-lg capitalize ${
                             difficulty === d
-                              ? 'bg-blue-500 text-white'
+                              ? 'bg-orange-500 text-white'
                               : 'bg-gray-200 text-gray-700'
-                          } hover:bg-blue-400 hover:text-white transition-colors`}
+                          } hover:bg-orange-400 hover:text-white transition-colors`}
                           onClick={() => setDifficulty(d as GameDifficulty)}
                         >
                           {d}
@@ -397,7 +401,7 @@ const Addition = () => {
 
                   <button
                     onClick={startGame}
-                    className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.addition.button}`}
+                    className={`${gameStyles.gameContent.startScreen.startButton} ${gameColors.division.button}`}
                   >
                     <PlayIcon className="mr-2" />
                     Start Game
@@ -409,7 +413,7 @@ const Addition = () => {
                     {/* Game Progress */}
                     <div className={gameStyles.gameContent.progressBar.wrapper}>
                       <div
-                        className={`${gameStyles.gameContent.progressBar.inner} ${gameColors.addition.gradient}`}
+                        className={`${gameStyles.gameContent.progressBar.inner} ${gameColors.division.gradient}`}
                         style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
                       />
                     </div>
@@ -426,7 +430,7 @@ const Addition = () => {
 
                       {/* Game Question */}
                       <div className={gameStyles.gameContent.gameScreen.equation}>
-                        {num1} + {num2} = ?
+                        {dividend} ÷ {divisor} = ?
                       </div>
 
                       {/* Answer Form */}
@@ -436,13 +440,13 @@ const Addition = () => {
                           type="number"
                           value={userAnswer}
                           onChange={(e) => setUserAnswer(e.target.value)}
-                          className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.addition.focus}`}
+                          className={`${gameStyles.gameContent.gameScreen.input} ${gameColors.division.focus}`}
                           placeholder="Enter your answer"
                           autoFocus
                         />
                         <button
                           type="submit"
-                          className={`${gameStyles.gameContent.gameScreen.submitButton} ${gameColors.addition.button}`}
+                          className={`${gameStyles.gameContent.gameScreen.submitButton} ${gameColors.division.button}`}
                         >
                           Check Answer
                         </button>
@@ -489,4 +493,4 @@ const Addition = () => {
   );
 };
 
-export default Addition;
+export default Division;
