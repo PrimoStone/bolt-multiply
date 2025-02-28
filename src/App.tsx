@@ -13,24 +13,30 @@ import DivisionGame from './components/DivisionGame';
 import Addition from './components/Addition';
 import Subtraction from './components/Subtraction';
 import Profile from './components/Profile';
+import Navigation from './components/Navigation';
+import AdminTools from './components/AdminTools';
 
 function App() {
   return (
     <Router>
       <UserProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<GameSelect />} />
-          <Route path="/game" element={<Game />} />
-          <Route path="/progress" element={<Progress />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/division" element={<DivisionGame />} />
-          <Route path="/addition" element={<Addition />} />
-          <Route path="/subtraction" element={<Subtraction />} />
-          <Route path="/proof" element={<Proof />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <div className="min-h-screen bg-gray-50 pt-16"> {/* Added padding-top for fixed navbar */}
+          <Navigation />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<GameSelect />} />
+            <Route path="/game" element={<Game />} />
+            <Route path="/progress" element={<Progress />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/division" element={<DivisionGame />} />
+            <Route path="/addition" element={<Addition />} />
+            <Route path="/subtraction" element={<Subtraction />} />
+            <Route path="/proof" element={<Proof />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<AdminTools />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </UserProvider>
     </Router>
   );

@@ -4,10 +4,26 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if true;
+      // Allow updates to the user document, including coins field
+      allow update: if true;
     }
+    
     match /stats/{statId} {
       allow read: if true;
       allow create: if true;
     }
+    
+    // Rules for coin transactions
+    match /coinTransactions/{transactionId} {
+      // Allow reading transactions for the user's own transactions
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Allow creating transactions with valid fields
+      allow create: if request.auth != null && 
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.amount is number &&
+                      request.resource.data.type in ['REWARD', 'DAILY_BONUS', 'PURCHASE'] &&
+                      request.resource.data.description is string;
+    }
   }
-} 
+}

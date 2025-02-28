@@ -9,6 +9,7 @@ interface User {
   firstName: string;
   lastName: string;
   photoURL?: string;
+  coins: number;
 }
 
 const storage = getStorage();
@@ -86,7 +87,8 @@ export const registerUser = async (
       firstName,
       lastName,
       photoURL: photoBase64, // zapisujemy Base64 string
-      createdAt: new Date()
+      createdAt: new Date(),
+      coins: 0 // Initialize coins balance for new users
     });
 
     return {
@@ -94,7 +96,8 @@ export const registerUser = async (
       username,
       firstName,
       lastName,
-      photoURL: photoBase64
+      photoURL: photoBase64,
+      coins: 0 // Include coins in the returned user object
     };
   } catch (error) {
     console.error('Błąd podczas rejestracji:', error);
@@ -117,12 +120,20 @@ export const loginUser = async (username: string, password: string) => {
     }
 
     const userData = querySnapshot.docs[0].data();
+    
+    // If user doesn't have coins field in database, update it
+    if (typeof userData.coins === 'undefined') {
+      const userDocRef = doc(db, 'users', querySnapshot.docs[0].id);
+      await updateDoc(userDocRef, { coins: 0 });
+    }
+    
     return {
       id: querySnapshot.docs[0].id,
       username: userData.username,
       firstName: userData.firstName,
       lastName: userData.lastName,
-      photoURL: userData.photoURL
+      photoURL: userData.photoURL,
+      coins: userData.coins || 0 // Use 0 as default if coins is undefined
     };
   } catch (error) {
     console.error('Błąd podczas logowania:', error);
@@ -405,7 +416,8 @@ export const getUserStats = async (userId: string) => {
           firstName: userData?.firstName || '',
           lastName: userData?.lastName || '',
           photoURL: userData?.photoURL || null,
-          email: userData?.email || null
+          email: userData?.email || null,
+          coins: userData?.coins || 0
         },
         stats: initialStats
       };
@@ -418,7 +430,8 @@ export const getUserStats = async (userId: string) => {
         firstName: userData?.firstName || '',
         lastName: userData?.lastName || '',
         photoURL: userData?.photoURL || null,
-        email: userData?.email || null
+        email: userData?.email || null,
+        coins: userData?.coins || 0
       },
       stats: userStatsDoc.data().stats
     };

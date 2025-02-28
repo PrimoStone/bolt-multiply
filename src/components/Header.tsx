@@ -1,7 +1,7 @@
 import React from 'react';
 import { useUser } from '../contexts/UserContext';
 import { Link } from 'react-router-dom';
-import { Coins } from 'lucide-react';
+import { Coins, User } from 'lucide-react';
 
 const Header: React.FC = () => {
   const { user, coins } = useUser();
@@ -17,16 +17,35 @@ const Header: React.FC = () => {
           />
         </Link>
 
-        <div className="flex items-center space-x-4">
-          {user && (
+        {user && (
+          <div className="flex items-center space-x-4">
+            {/* Coin Display */}
             <div className="flex items-center bg-yellow-100 px-3 py-1.5 rounded-full">
               <Coins className="w-5 h-5 text-yellow-600 mr-2" />
               <span className="font-bold text-yellow-600">
                 {coins.toLocaleString()}
               </span>
             </div>
-          )}
-        </div>
+
+            {/* User Avatar */}
+            <div className="flex items-center space-x-2">
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={`${user.firstName}'s avatar`}
+                  className="w-8 h-8 rounded-full border-2 border-gray-200"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
+              )}
+              <span className="font-medium text-gray-700">
+                {user.firstName}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

@@ -11,6 +11,7 @@ import { useUserStats } from '../hooks/useUserStats';
 import StatsModal from '../components/StatsModal'; // Import StatsModal component
 import { gameStyles, gameColors } from '../styles/gameStyles';
 import CoinAnimation from '../components/CoinAnimation'; // Import CoinAnimation component
+import { COIN_REWARDS } from '../types/coinTypes';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -46,6 +47,7 @@ const Game: React.FC = () => {
   const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [earnedCoins, setEarnedCoins] = useState(0);
+  const [coinAnimationType, setCoinAnimationType] = useState<'correct' | 'streak' | 'perfect'>('correct');
   const [currentStreak, setCurrentStreak] = useState(0);
 
   useEffect(() => {
@@ -170,22 +172,73 @@ const Game: React.FC = () => {
     const isCorrect = answer === num1 * num2;
     
     if (isCorrect) {
-      // Calculate coin reward
-      const baseReward = 10;
-      const streakBonus = Math.floor(currentStreak / 5) * 5;
-      const speedBonus = time < 5 ? 5 : 0;
-      const totalReward = baseReward + streakBonus + speedBonus;
-      
+      // Update score and streak
       setScore(prev => prev + 1);
-      setCurrentStreak(prev => prev + 1);
-      setEarnedCoins(totalReward);
-      setShowCoinAnimation(true);
+      const newStreak = currentStreak + 1;
+      setCurrentStreak(newStreak);
       
-      await updateCoins(totalReward);
+      // Base reward for correct answer
+      let totalReward = COIN_REWARDS.CORRECT_ANSWER;
+      let animationType: 'correct' | 'streak' | 'perfect' = 'correct';
+      
+      // Check for streak bonus (10 in a row)
+      if (newStreak === 10) {
+        totalReward += COIN_REWARDS.STREAK_BONUS;
+        animationType = 'streak';
+        
+        // Log streak bonus
+        await updateCoins(
+          COIN_REWARDS.STREAK_BONUS,
+          'STREAK_BONUS',
+          `10 correct answers in a row bonus`
+        );
+      }
+      
+      // Check if this is the last question and all answers were correct
+      if (questionsAnswered + 1 === TOTAL_QUESTIONS && score + 1 === TOTAL_QUESTIONS) {
+        totalReward += COIN_REWARDS.PERFECT_GAME;
+        animationType = 'perfect';
+        
+        // Log perfect game bonus
+        await updateCoins(
+          COIN_REWARDS.PERFECT_GAME,
+          'PERFECT_GAME',
+          `Perfect game bonus! All ${TOTAL_QUESTIONS} answers correct`
+        );
+      }
+      
+      // Set animation properties
+      setEarnedCoins(totalReward);
+      setCoinAnimationType(animationType);
+      
+      // First hide any existing animation to reset it
+      setShowCoinAnimation(false);
+      
+      // Then show the new animation after a small delay
+      setTimeout(() => {
+        setShowCoinAnimation(true);
+        console.log(`Showing coin animation: +${totalReward} coins (${animationType})`);
+        
+        // Automatically hide the animation after 1.5 seconds
+        setTimeout(() => {
+          setShowCoinAnimation(false);
+          console.log("Auto-hiding coin animation after timeout");
+        }, 1500);
+      }, 50);
+      
+      // Log base reward for correct answer
+      await updateCoins(
+        COIN_REWARDS.CORRECT_ANSWER,
+        'REWARD',
+        `Correct answer: ${num1} × ${num2} = ${answer}`
+      );
+      
+      // Add to game history
       setGameHistory(prev => [...prev, 
         `${num1} × ${num2} = ${answer} (Correct! +${totalReward} coins)`
       ]);
     } else {
+      // Reset streak on wrong answer
       setCurrentStreak(0);
       setGameHistory(prev => [...prev, 
         `${num1} × ${num2} = ${answer} (correct answer was ${num1 * num2})`
@@ -196,6 +249,7 @@ const Game: React.FC = () => {
     setUserAnswer('');
     
     if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
+      // Game is over
       const endTime = new Date();
       const timeSpent = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
       const finalScore = score + (isCorrect ? 1 : 0);
@@ -297,10 +351,15 @@ const Game: React.FC = () => {
 
   return (
     <div className={`${gameStyles.container} ${gameColors.multiplication.background}`}>
+      {/* Coin animation that shows when coins are earned */}
       {showCoinAnimation && (
         <CoinAnimation 
           amount={earnedCoins}
-          onComplete={() => setShowCoinAnimation(false)}
+          type={coinAnimationType}
+          onComplete={() => {
+            console.log("Animation complete, hiding animation");
+            setShowCoinAnimation(false);
+          }}
         />
       )}
       <div className={gameStyles.innerContainer}>
