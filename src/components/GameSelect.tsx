@@ -128,21 +128,22 @@ const GameSelect: React.FC = () => {
         {/* Main content */}
         <div className="flex-1 flex flex-col items-center justify-center mt-32 sm:mt-36">
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto px-4">
+          {/* Changed grid-cols-1 to grid-cols-2 for mobile layout, creating a 2x2 grid on small screens */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto px-4">
             {/* Addition Card */}
             <Link
               to="/addition"
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
                        overflow-hidden group"
             >
-              <div className="p-4 sm:p-6 flex flex-col items-center">
+              <div className="p-3 sm:p-6 flex flex-col items-center">
                 <img 
                   src="/addition.png" 
                   alt="Addition" 
-                  className="w-32 h-32 sm:w-48 sm:h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                  className="w-20 h-20 sm:w-48 sm:h-48 object-contain mb-2 sm:mb-4 transform group-hover:scale-110 transition-transform duration-300"
                 />
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 text-center">Addition</h2>
-                <p className="text-sm sm:text-base text-gray-600 text-center mt-2">Practice adding numbers</p>
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-800 text-center">Addition</h2>
+                <p className="text-xs sm:text-base text-gray-600 text-center mt-1 sm:mt-2">Practice adding numbers</p>
               </div>
             </Link>
 
@@ -152,14 +153,14 @@ const GameSelect: React.FC = () => {
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
                        overflow-hidden group"
             >
-              <div className="p-4 sm:p-6 flex flex-col items-center">
+              <div className="p-3 sm:p-6 flex flex-col items-center">
                 <img 
                   src="/subtraction.png" 
                   alt="Subtraction" 
-                  className="w-32 h-32 sm:w-48 sm:h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                  className="w-20 h-20 sm:w-48 sm:h-48 object-contain mb-2 sm:mb-4 transform group-hover:scale-110 transition-transform duration-300"
                 />
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 text-center">Subtraction</h2>
-                <p className="text-sm sm:text-base text-gray-600 text-center mt-2">Practice subtracting numbers</p>
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-800 text-center">Subtraction</h2>
+                <p className="text-xs sm:text-base text-gray-600 text-center mt-1 sm:mt-2">Practice subtracting numbers</p>
               </div>
             </Link>
 
@@ -169,14 +170,14 @@ const GameSelect: React.FC = () => {
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
                        overflow-hidden group"
             >
-              <div className="p-4 sm:p-6 flex flex-col items-center">
+              <div className="p-3 sm:p-6 flex flex-col items-center">
                 <img 
                   src="/multiplication.png" 
                   alt="Multiplication" 
-                  className="w-32 h-32 sm:w-48 sm:h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                  className="w-20 h-20 sm:w-48 sm:h-48 object-contain mb-2 sm:mb-4 transform group-hover:scale-110 transition-transform duration-300"
                 />
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 text-center">Multiplication</h2>
-                <p className="text-sm sm:text-base text-gray-600 text-center mt-2">Practice multiplying numbers</p>
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-800 text-center">Multiplication</h2>
+                <p className="text-xs sm:text-base text-gray-600 text-center mt-1 sm:mt-2">Practice multiplying numbers</p>
               </div>
             </Link>
 
@@ -186,14 +187,14 @@ const GameSelect: React.FC = () => {
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 
                        overflow-hidden group"
             >
-              <div className="p-4 sm:p-6 flex flex-col items-center">
+              <div className="p-3 sm:p-6 flex flex-col items-center">
                 <img 
                   src="/division.png" 
                   alt="Division" 
-                  className="w-32 h-32 sm:w-48 sm:h-48 object-contain mb-4 transform group-hover:scale-110 transition-transform duration-300"
+                  className="w-20 h-20 sm:w-48 sm:h-48 object-contain mb-2 sm:mb-4 transform group-hover:scale-110 transition-transform duration-300"
                 />
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 text-center">Division</h2>
-                <p className="text-sm sm:text-base text-gray-600 text-center mt-2">Practice dividing numbers</p>
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-800 text-center">Division</h2>
+                <p className="text-xs sm:text-base text-gray-600 text-center mt-1 sm:mt-2">Practice dividing numbers</p>
               </div>
             </Link>
           </div>
