@@ -366,28 +366,29 @@ const Addition = () => {
             <div className={`${gameStyles.gameCardGradient} ${gameColors.addition.gradient}`}></div>
             <div className={gameStyles.gameCardInner}>
               <div className="max-w-md mx-auto">
-                <div className="divide-y divide-gray-200">
-                  <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                    <div className="flex justify-between items-center mb-8">
-                      <button
-                        onClick={() => navigate('/gameselect')}
-                        className={`${gameStyles.backButton} ${gameColors.addition.button}`}
-                      >
-                        <ArrowLeft className={gameStyles.backIcon} />
-                        <span>Back</span>
-                      </button>
-                    </div>
+                {/* Game navigation and logo - moved to top and made more compact for better mobile experience */}
+                <div className="flex items-center justify-between mb-2 py-2">
+                  <button
+                    onClick={() => navigate('/gameselect')}
+                    className={`${gameStyles.backButton} ${gameColors.addition.button} text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2`}
+                  >
+                    <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    <span>Back</span>
+                  </button>
+                  
+                  <img 
+                    src="/addition.png" 
+                    alt="Addition" 
+                    className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
+                  />
+                </div>
 
+                <div className="divide-y divide-gray-200">
+                  <div className="py-4 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
                     <div className={gameStyles.gameContent.wrapper}>
                       {!isGameStarted ? (
                         <div className={gameStyles.gameContent.startScreen.wrapper}>
-                          <img 
-                            src="/addition.png" 
-                            alt="Addition" 
-                            className="w-48 h-48 object-contain mx-auto mb-4"
-                          />
-                          {/* <h1 className={gameStyles.gameContent.startScreen.title}>Addition Challenge</h1> */}
-
+                          {/* Removed duplicate game logo since we already have it at the top */}
                           {/* Number Selection */}
                           <div className="mb-6">
                             <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
@@ -476,7 +477,7 @@ const Addition = () => {
                             `}
                           </style>
 
-                          <div className="flex justify-between mb-6 text-gray-600 font-medium">
+                          <div className="flex justify-between mb-2 text-gray-600 font-medium text-xs sm:text-sm">
                             <div>Score: {score}</div>
                             <div>Time: {formatTime(time)}</div>
                             <div>
@@ -484,19 +485,13 @@ const Addition = () => {
                             </div>
                           </div>
 
-                          <div className="mb-4 sm:mb-8">
-                            <img 
-                              src="/addition.png" 
-                              alt="Addition" 
-                              className="w-48 h-48 object-contain mx-auto mb-2"
-                            />
-                          </div>
+                          {/* Removed duplicate game logo since we already have it at the top */}
 
-                          <div className="text-4xl font-bold text-center mb-8 text-gray-700">
+                          <div className="text-3xl sm:text-4xl font-bold text-center mb-4 sm:mb-6 text-gray-700">
                             {num1} + {num2} = ?
                           </div>
 
-                          <form onSubmit={handleSubmit} className="space-y-4">
+                          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                             <input
                               type="number"
                               value={userAnswer}
