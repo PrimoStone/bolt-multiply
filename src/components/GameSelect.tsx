@@ -126,7 +126,7 @@ const GameSelect: React.FC = () => {
         </div>
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col items-center justify-center mt-32 sm:mt-36">
+        <div className="flex-1 flex flex-col items-center justify-center mt-4 sm:mt-6">
           
           {/* Changed grid-cols-1 to grid-cols-2 for mobile layout, creating a 2x2 grid on small screens */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto px-4">
