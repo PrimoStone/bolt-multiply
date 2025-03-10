@@ -303,65 +303,8 @@ const Addition = () => {
   return (
     <div className={`${gameStyles.container} ${gameColors.addition.background}`}>
       <div className={gameStyles.innerContainer}>
-        {/* Logo at top */}
-        <div className={gameStyles.numberNinjasLogo.wrapper}>
-          <Link to="/" className="inline-block">
-            <img 
-              src="/number-ninjas-logo.png" 
-              alt="Number Ninjas" 
-              className={gameStyles.numberNinjasLogo.image}
-            />
-          </Link>
-        </div>
-
-        {/* User menu */}
-        <div className={gameStyles.userMenu.wrapper}>
-          <div className="relative">
-            <button
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className={gameStyles.userMenu.button}
-            >
-              <div className={gameStyles.userMenu.avatar.wrapper}>
-                {renderAvatar()}
-              </div>
-            </button>
-
-            {isUserMenuOpen && (
-              <div
-                ref={dropdownRef}
-                className={gameStyles.userMenu.dropdown.wrapper}
-              >
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className={gameStyles.userMenu.dropdown.item}
-                >
-                  <Users className={gameStyles.userMenu.dropdown.icon} />
-                  Change Avatar
-                </button>
-                <button
-                  onClick={() => navigate('/profile')}
-                  className={gameStyles.userMenu.dropdown.item}
-                >
-                  <Award className={gameStyles.userMenu.dropdown.icon} />
-                  Profile
-                </button>
-                <button
-                  onClick={() => {
-                    setUser(null);
-                    navigate('/login');
-                  }}
-                  className={gameStyles.userMenu.dropdown.item}
-                >
-                  <LogOut className={gameStyles.userMenu.dropdown.icon} />
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Main game content */}
-        <div className={gameStyles.contentWrapper}>
+        {/* Main game content - reduced top spacing for better mobile experience */}
+        <div className={`${gameStyles.contentWrapper} mt-2`}>
           <div className={gameStyles.gameCard}>
             <div className={`${gameStyles.gameCardGradient} ${gameColors.addition.gradient}`}></div>
             <div className={gameStyles.gameCardInner}>
@@ -388,7 +331,6 @@ const Addition = () => {
                     <div className={gameStyles.gameContent.wrapper}>
                       {!isGameStarted ? (
                         <div className={gameStyles.gameContent.startScreen.wrapper}>
-                          {/* Removed duplicate game logo since we already have it at the top */}
                           {/* Number Selection */}
                           <div className="mb-6">
                             <label className="block text-gray-700 text-sm font-bold mb-2 text-center">

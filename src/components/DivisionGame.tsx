@@ -208,8 +208,8 @@ const DivisionGame: React.FC = () => {
   return (
     <div className={`${gameStyles.container} ${gameColors.division.background}`}>
       <div className={gameStyles.innerContainer}>
-        {/* Main game content */}
-        <div className={gameStyles.contentWrapper}>
+        {/* Main game content - reduced top spacing for better mobile experience */}
+        <div className={`${gameStyles.contentWrapper} mt-2`}>
           <div className={gameStyles.gameCard}>
             <div className={`${gameStyles.gameCardGradient} ${gameColors.division.gradient}`}></div>
             <div className={gameStyles.gameCardInner}>

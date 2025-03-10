@@ -72,7 +72,7 @@ const GameSelect: React.FC = () => {
     <div className="min-h-screen bg-gray-100 py-4 sm:py-6 px-4 flex flex-col relative">
       <div className="max-w-7xl mx-auto relative flex flex-col min-h-[calc(100vh-2rem)] sm:min-h-[calc(100vh-3rem)]">
         {/* Logo at top */}
-        <div className={gameStyles.numberNinjasLogo.wrapper}>
+        {/* <div className={gameStyles.numberNinjasLogo.wrapper}>
           <Link to="/" className="inline-block">
             <img 
               src="/number-ninjas-logo.png" 
@@ -80,9 +80,9 @@ const GameSelect: React.FC = () => {
               className={gameStyles.numberNinjasLogo.image}
             />
           </Link>
-        </div>
+        </div> */}
 
-        {/* User menu */}
+        {/* User menu
         <div className="absolute top-4 sm:top-6 right-4 sm:right-6">
           <div className="relative" ref={dropdownRef}>
             <button
@@ -123,7 +123,7 @@ const GameSelect: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* Main content */}
         <div className="flex-1 flex flex-col items-center justify-center mt-4 sm:mt-6">

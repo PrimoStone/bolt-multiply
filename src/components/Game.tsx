@@ -363,67 +363,8 @@ const Game: React.FC = () => {
         />
       )}
       <div className={gameStyles.innerContainer}>
-        {/* User menu */}
-        <div className={gameStyles.userMenu.wrapper}>
-          <div className="relative">
-            <button
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className={gameStyles.userMenu.button}
-            >
-              <div className={gameStyles.userMenu.avatar.wrapper}>
-                {user?.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt="Profile"
-                    className={gameStyles.userMenu.avatar.image}
-                  />
-                ) : (
-                  <div className={`${gameStyles.userMenu.avatar.placeholder} ${gameColors.multiplication.button}`}>
-                    {getInitials(user?.firstName, user?.lastName)}
-                  </div>
-                )}
-              </div>
-            </button>
-
-            {isUserMenuOpen && (
-              <div
-                ref={dropdownRef}
-                className={gameStyles.userMenu.dropdown.wrapper}
-              >
-                <Link
-                  to="/profile"
-                  className={gameStyles.userMenu.dropdown.item}
-                  onClick={() => setIsUserMenuOpen(false)}
-                >
-                  <Users className={gameStyles.userMenu.dropdown.icon} />
-                  Profile
-                </Link>
-
-                <button
-                  onClick={() => setShowStats(true)}
-                  className={gameStyles.userMenu.dropdown.item}
-                >
-                  <BarChart2 className={gameStyles.userMenu.dropdown.icon} />
-                  Stats
-                </button>
-
-                <button
-                  onClick={() => {
-                    setUser(null);
-                    navigate('/login');
-                  }}
-                  className={gameStyles.userMenu.dropdown.item}
-                >
-                  <LogOut className={gameStyles.userMenu.dropdown.icon} />
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Main game content */}
-        <div className={gameStyles.contentWrapper}>
+        {/* Main game content - reduced top spacing for better mobile experience */}
+        <div className={`${gameStyles.contentWrapper} mt-2`}>
           <div className={gameStyles.gameCard}>
             <div className={`${gameStyles.gameCardGradient} ${gameColors.multiplication.gradient}`}></div>
             <div className={gameStyles.gameCardInner}>
@@ -444,150 +385,151 @@ const Game: React.FC = () => {
                     className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
                   />
                 </div>
-                
-                <div className="divide-y divide-gray-200">
-                  <div className="py-4 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                    <div className={gameStyles.gameContent.wrapper}>
-                      {!isGameStarted ? (
-                        <div className={gameStyles.gameContent.startScreen.wrapper}>
-                          {/* Removed duplicate game logo from here since we added it at the top */}
-                          {/* <h1 className={gameStyles.gameContent.startScreen.title}>Multiplication Challenge</h1> */}
+                {!isGameStarted ? (
+                  <div className="divide-y divide-gray-200">
+                    <div className="py-4 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                      <div className={gameStyles.gameContent.wrapper}>
+                        {/* Removed duplicate game logo from here since we added it at the top */}
+                        {/* <h1 className={gameStyles.gameContent.startScreen.title}>Multiplication Challenge</h1> */}
 
-                          {/* Number Selection */}
-                          <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
-                              Select a Number (Optional)
-                            </label>
-                            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[320px] mx-auto">
-                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
-                                <div key={num} className="flex items-center justify-center">
-                                  <button
-                                    onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
-                                    className={`
-                                      w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-base sm:text-lg font-semibold
-                                      transition-all duration-200 ease-in-out
-                                      ${selectedNumber === num 
-                                        ? 'bg-blue-500 text-white shadow-lg scale-110' 
-                                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-500 hover:text-blue-500'}
-                                    `}
-                                  >
-                                    {num}
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="mt-2 text-center">
-                              {selectedNumber === undefined ? (
-                                <p className="text-sm text-gray-500">
-                                  No number selected - using random numbers
-                                </p>
-                              ) : (
-                                <p className="text-sm text-blue-600">
-                                  Practice multiplying by {selectedNumber}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Difficulty Selection */}
-                          <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2">
-                              Difficulty Level
-                            </label>
-                            <div className="flex gap-2">
-                              {['easy', 'medium', 'hard'].map((d) => (
+                        {/* Number Selection */}
+                        <div className="mb-6">
+                          <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
+                            Select a Number (Optional)
+                          </label>
+                          <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[320px] mx-auto">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                              <div key={num} className="flex items-center justify-center">
                                 <button
-                                  key={d}
-                                  className={`flex-1 py-2 px-4 rounded-lg capitalize ${
-                                    difficulty === d
-                                      ? 'bg-blue-500 text-white'
-                                      : 'bg-gray-200 text-gray-700'
-                                  } hover:bg-blue-400 hover:text-white transition-colors`}
-                                  onClick={() => setDifficulty(d as 'easy' | 'medium' | 'hard')}
+                                  onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
+                                  className={`
+                                    w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-base sm:text-lg font-semibold
+                                    transition-all duration-200 ease-in-out
+                                    ${selectedNumber === num 
+                                      ? 'bg-blue-500 text-white shadow-lg scale-110' 
+                                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-500 hover:text-blue-500'}
+                                  `}
                                 >
-                                  {d}
+                                  {num}
                                 </button>
-                              ))}
-                            </div>
+                              </div>
+                            ))}
                           </div>
-
-                          <button
-                            onClick={startGame}
-                            className="px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 flex items-center space-x-2 mx-auto text-sm sm:text-base bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur"
-                          >
-                            <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                            <span>Start Game</span>
-                          </button>
+                          <div className="mt-2 text-center">
+                            {selectedNumber === undefined ? (
+                              <p className="text-sm text-gray-500">
+                                No number selected - using random numbers
+                              </p>
+                            ) : (
+                              <p className="text-sm text-blue-600">
+                                Practice multiplying by {selectedNumber}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <div className={gameStyles.gameContent.gameScreen.wrapper}>
-                          {/* Progress Bar */}
-                          <div className={gameStyles.gameContent.progressBar.wrapper}>
-                            <div 
-                              className={gameStyles.gameContent.progressBar.inner}
-                              style={{ 
-                                width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
-                                background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
-                                animation: 'shimmer 2s linear infinite'
-                              }}
-                            />
-                          </div>
-                          <style>
-                            {`
-                              @keyframes shimmer {
-                                0% { background-position: 200% center; }
-                                100% { background-position: -200% center; }
-                              }
-                            `}
-                          </style>
 
-                          <div className="flex justify-between mb-2 text-gray-600 font-medium text-xs sm:text-sm">
-                            <div>Score: {score}</div>
-                            <div>Time: {formatTime(time)}</div>
-                            <div>
-                              Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}
-                            </div>
-                          </div>
-
-                          {/* Removed duplicate game logo from here since we added it at the top */}
-
-                          <div className="text-3xl sm:text-4xl font-bold text-center mb-4 sm:mb-6 text-gray-700">
-                            {num1} × {num2} = ?
-                          </div>
-
-                          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-                            <input
-                              type="number"
-                              value={userAnswer}
-                              onChange={(e) => setUserAnswer(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200"
-                              placeholder="Your answer"
-                              ref={inputRef}
-                            />
-                            <button
-                              type="submit"
-                              className="w-full py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur"
-                            >
-                              Submit Answer
-                            </button>
-                          </form>
-
-                          {/* Game History */}
-                          <div className="flex gap-1 mt-6 justify-center">
-                            {gameHistory.map((result, index) => (
-                              <div
-                                key={index}
-                                className={`w-3 h-3 rounded-full ${
-                                  result.includes('Correct') ? 'bg-green-500' : 'bg-red-500'
-                                }`}
-                              />
+                        {/* Difficulty Selection */}
+                        <div className="mb-6">
+                          <label className="block text-gray-700 text-sm font-bold mb-2">
+                            Difficulty Level
+                          </label>
+                          <div className="flex gap-2">
+                            {['easy', 'medium', 'hard'].map((d) => (
+                              <button
+                                key={d}
+                                className={`flex-1 py-2 px-4 rounded-lg capitalize ${
+                                  difficulty === d
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-200 text-gray-700'
+                                } hover:bg-blue-400 hover:text-white transition-colors`}
+                                onClick={() => setDifficulty(d as 'easy' | 'medium' | 'hard')}
+                              >
+                                {d}
+                              </button>
                             ))}
                           </div>
                         </div>
-                      )}
+
+                        <button
+                          onClick={startGame}
+                          className="px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 flex items-center space-x-2 mx-auto text-sm sm:text-base bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur"
+                        >
+                          <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <span>Start Game</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    <div className="py-4 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                      <div className={gameStyles.gameContent.wrapper}>
+                        {/* Progress Bar */}
+                        <div className={gameStyles.gameContent.progressBar.wrapper}>
+                          <div 
+                            className={gameStyles.gameContent.progressBar.inner}
+                            style={{ 
+                              width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
+                              background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
+                              animation: 'shimmer 2s linear infinite'
+                            }}
+                          />
+                        </div>
+                        <style>
+                          {`
+                            @keyframes shimmer {
+                              0% { background-position: 200% center; }
+                              100% { background-position: -200% center; }
+                            }
+                          `}
+                        </style>
+
+                        <div className="flex justify-between mb-2 text-gray-600 font-medium text-xs sm:text-sm">
+                          <div>Score: {score}</div>
+                          <div>Time: {formatTime(time)}</div>
+                          <div>
+                            Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}
+                          </div>
+                        </div>
+
+                        {/* Removed duplicate game logo from here since we added it at the top */}
+
+                        <div className="text-3xl sm:text-4xl font-bold text-center mb-4 sm:mb-6 text-gray-700">
+                          {num1} × {num2} = ?
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                          <input
+                            type="number"
+                            value={userAnswer}
+                            onChange={(e) => setUserAnswer(e.target.value)}
+                            className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200"
+                            placeholder="Your answer"
+                            ref={inputRef}
+                          />
+                          <button
+                            type="submit"
+                            className="w-full py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur"
+                          >
+                            Submit Answer
+                          </button>
+                        </form>
+
+                        {/* Game History */}
+                        <div className="flex gap-1 mt-6 justify-center">
+                          {gameHistory.map((result, index) => (
+                            <div
+                              key={index}
+                              className={`w-3 h-3 rounded-full ${
+                                result.includes('Correct') ? 'bg-green-500' : 'bg-red-500'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
