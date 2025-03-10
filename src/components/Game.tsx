@@ -364,13 +364,13 @@ const Game: React.FC = () => {
       )}
       <div className={gameStyles.innerContainer}>
         {/* Main game content - reduced top spacing for better mobile experience */}
-        <div className={`${gameStyles.contentWrapper} mt-2`}>
+        <div className={`${gameStyles.contentWrapper} mt-0`}>
           <div className={gameStyles.gameCard}>
             <div className={`${gameStyles.gameCardGradient} ${gameColors.multiplication.gradient}`}></div>
             <div className={gameStyles.gameCardInner}>
-              <div className="max-w-md mx-auto">
-                {/* Game navigation and logo - moved to top and made more compact */}
-                <div className="flex items-center justify-between mb-2 py-2">
+              {/* Fixed header - sticky position to ensure it's always visible */}
+              <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md rounded-t-lg -mt-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 pb-2 mb-4 shadow-sm">
+                <div className="flex items-center justify-between">
                   <button
                     onClick={() => navigate('/gameselect')}
                     className={`${gameStyles.backButton} ${gameColors.multiplication.button} text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2`}
@@ -385,6 +385,9 @@ const Game: React.FC = () => {
                     className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
                   />
                 </div>
+              </div>
+              <div className="max-w-md mx-auto">
+                {/* Game content starts here - removed the old navigation */}
                 {!isGameStarted ? (
                   <div className="divide-y divide-gray-200">
                     <div className="py-4 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
