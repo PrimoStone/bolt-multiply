@@ -2,7 +2,7 @@
 export const gameStyles = {
   // Layout
   container: "min-h-screen py-4 sm:py-6 px-4 flex flex-col relative",
-  innerContainer: "max-w-7xl mx-auto w-full flex flex-col min-h-[calc(100vh-2rem)] sm:min-h-[calc(100vh-3rem)] relative",
+  innerContainer: "max-w-7xl mx-auto w-full flex flex-col  relative",
   contentWrapper: "flex-1 flex flex-col items-center justify-center mt-24 sm:mt-28",
 
   // Game card
