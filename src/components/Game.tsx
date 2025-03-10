@@ -369,7 +369,7 @@ const Game: React.FC = () => {
             <div className={`${gameStyles.gameCardGradient} ${gameColors.multiplication.gradient}`}></div>
             <div className={gameStyles.gameCardInner}>
               {/* Fixed header - sticky position to ensure it's always visible */}
-              <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md rounded-t-lg -mt-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 pb-2 mb-4 shadow-sm">
+              <div className="sticky top-0 z-10 backdrop-blur-md rounded-t-lg -mt-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 pb-2 mb-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => navigate('/gameselect')}
