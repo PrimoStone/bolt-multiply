@@ -6,6 +6,10 @@ import { saveGameStats } from '../firebase/utils';
 import { useUserStats } from '../hooks/useUserStats';
 import { StatsModal } from './StatsModal';
 import { gameStyles, gameColors } from '../styles/gameStyles';
+import { useUser } from '../contexts/UserContext';
+import { COIN_REWARDS, TransactionType } from '../types/coinTypes';
+import { GameDifficulty } from '../types/gameConfig';
+import CoinAnimation from '../components/CoinAnimation';
 
 const TOTAL_QUESTIONS = 20;
 
@@ -21,7 +25,7 @@ const formatTime = (seconds: number): string => {
 
 const DivisionGame: React.FC = () => {
   const navigate = useNavigate();
-  const { user, setUser } = useContext(UserContext);
+  const { user, setUser, updateCoins } = useContext(UserContext);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [num1, setNum1] = useState(0);
   const [num2, setNum2] = useState(0);
@@ -39,6 +43,10 @@ const DivisionGame: React.FC = () => {
   const [selectedNumber, setSelectedNumber] = useState<number | undefined>();
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy');
   const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
+  const [showCoinAnimation, setShowCoinAnimation] = useState(false);
+  const [earnedCoins, setEarnedCoins] = useState(0);
+  const [coinAnimationType, setCoinAnimationType] = useState<'correct' | 'streak' | 'perfect'>('correct');
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   const { stats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'division');
 
@@ -147,17 +155,67 @@ const DivisionGame: React.FC = () => {
     const isCorrect = parseFloat(userAnswer) === correctAnswer;
     
     if (isCorrect) {
+      // Update score and streak
       setScore(score + 1);
+      const newStreak = currentStreak + 1;
+      setCurrentStreak(newStreak);
+      
+      // Base reward for correct answer
+      let totalReward = COIN_REWARDS.CORRECT_ANSWER;
+      let animationType: 'correct' | 'streak' | 'perfect' = 'correct';
+      let transactionType: TransactionType = 'CORRECT_ANSWER';
+      
+      // First reset any existing animation
+      setShowCoinAnimation(false);
+      
+      if (newStreak === 10) {
+        totalReward += COIN_REWARDS.STREAK_BONUS;
+        animationType = 'streak';
+        transactionType = 'STREAK_BONUS';
+        await updateCoins(
+          COIN_REWARDS.STREAK_BONUS,
+          transactionType,
+          '10 correct answers in a row bonus'
+        );
+      }
+      
+      if (questionsAnswered + 1 === TOTAL_QUESTIONS && score + 1 === TOTAL_QUESTIONS) {
+        totalReward += COIN_REWARDS.PERFECT_GAME;
+        animationType = 'perfect';
+        transactionType = 'PERFECT_GAME';
+        await updateCoins(
+          COIN_REWARDS.PERFECT_GAME,
+          transactionType,
+          'Perfect game bonus'
+        );
+      }
+      
+      // Update base coins
+      await updateCoins(
+        COIN_REWARDS.CORRECT_ANSWER,
+        'CORRECT_ANSWER',
+        'Correct answer reward'
+      );
+      
+      // Show animation for exactly 1 second
+      setEarnedCoins(totalReward);
+      setCoinAnimationType(animationType);
+      setShowCoinAnimation(true);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setShowCoinAnimation(false);
+      
+      // Now proceed with next question
+      setQuestionsAnswered(prev => prev + 1);
+      setUserAnswer('');
+      generateQuestion();
+    } else {
+      setCurrentStreak(0);
     }
 
     const historyEntry = `${num1} ÷ ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect, answer was ' + correctAnswer})`;
     setGameHistory([...gameHistory, historyEntry]);
-    setUserAnswer('');
     
-    const newQuestionsAnswered = questionsAnswered + 1;
-    setQuestionsAnswered(newQuestionsAnswered);
-
-    if (newQuestionsAnswered >= TOTAL_QUESTIONS) {
+    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
       await handleGameEnd();
     } else {
       generateQuestion();
@@ -207,6 +265,14 @@ const DivisionGame: React.FC = () => {
 
   return (
     <div className={`${gameStyles.container} ${gameColors.division.background}`}>
+      {/* Coin animation that shows when coins are earned */}
+      {showCoinAnimation && (
+        <CoinAnimation 
+          amount={earnedCoins}
+          type={coinAnimationType}
+          onComplete={() => setShowCoinAnimation(false)}
+        />
+      )}
       <div className={gameStyles.innerContainer}>
         {/* Main game content - reduced top spacing for better mobile experience */}
         <div className={`${gameStyles.contentWrapper} mt-2`}>

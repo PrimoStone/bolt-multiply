@@ -2,10 +2,19 @@ export interface CoinTransaction {
   id: string;
   userId: string;
   amount: number;
-  type: 'REWARD' | 'DAILY_BONUS' | 'STREAK_BONUS' | 'PERFECT_GAME' | 'PURCHASE';
+  type: TransactionType;
   description: string;
   timestamp: Date;
 }
+
+// Transaction types for the game
+export type TransactionType = 
+  | 'REWARD' 
+  | 'DAILY_BONUS' 
+  | 'STREAK_BONUS' 
+  | 'PERFECT_GAME' 
+  | 'PURCHASE'
+  | 'CORRECT_ANSWER';
 
 export interface DailyBonus {
   lastClaimDate: string; // ISO date string

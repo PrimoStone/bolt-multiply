@@ -10,7 +10,10 @@ import { saveGameStats } from '../firebase/utils';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useUserStats } from '../hooks/useUserStats';
+import { useUser } from '../contexts/UserContext';
+import { COIN_REWARDS, TransactionType } from '../types/coinTypes';
 import { GameDifficulty } from '../types/gameConfig';
+import CoinAnimation from '../components/CoinAnimation';
 
 interface Question {
   num1: number;
@@ -132,7 +135,7 @@ const generateQuestionsArray = (
 };
 
 const Addition = () => {
-  const { user, setUser } = useContext(UserContext);
+  const { user, setUser, updateCoins } = useContext(UserContext);
   const navigate = useNavigate();
   const [num1, setNum1] = useState(0);
   const [num2, setNum2] = useState(0);
@@ -150,6 +153,10 @@ const Addition = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'addition');
   const [showStats, setShowStats] = useState(false);
+  const [showCoinAnimation, setShowCoinAnimation] = useState(false);
+  const [earnedCoins, setEarnedCoins] = useState(0);
+  const [coinAnimationType, setCoinAnimationType] = useState<'correct' | 'streak' | 'perfect'>('correct');
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   // Game configuration
   const [selectedNumber, setSelectedNumber] = useState<number | undefined>();
@@ -244,14 +251,61 @@ const Addition = () => {
     const isCorrect = answer === num1 + num2;
     
     if (isCorrect) {
+      // Update score and streak
       setScore(prev => prev + 1);
-      setGameHistory(prev => [...prev, 'correct']);
+      const newStreak = currentStreak + 1;
+      setCurrentStreak(newStreak);
+      
+      let totalReward = COIN_REWARDS.CORRECT_ANSWER;
+      let animationType: 'correct' | 'streak' | 'perfect' = 'correct';
+      let transactionType: TransactionType = 'CORRECT_ANSWER';
+      
+      // First reset any existing animation
+      setShowCoinAnimation(false);
+      
+      if (newStreak === 10) {
+        totalReward += COIN_REWARDS.STREAK_BONUS;
+        animationType = 'streak';
+        transactionType = 'STREAK_BONUS';
+        await updateCoins(
+          COIN_REWARDS.STREAK_BONUS,
+          transactionType,
+          '10 correct answers in a row bonus'
+        );
+      }
+      
+      if (questionsAnswered + 1 === TOTAL_QUESTIONS && score + 1 === TOTAL_QUESTIONS) {
+        totalReward += COIN_REWARDS.PERFECT_GAME;
+        animationType = 'perfect';
+        transactionType = 'PERFECT_GAME';
+        await updateCoins(
+          COIN_REWARDS.PERFECT_GAME,
+          transactionType,
+          'Perfect game bonus'
+        );
+      }
+      
+      // Update base coins
+      await updateCoins(
+        COIN_REWARDS.CORRECT_ANSWER,
+        'CORRECT_ANSWER',
+        'Correct answer reward'
+      );
+      
+      // Show animation for exactly 1 second
+      setEarnedCoins(totalReward);
+      setCoinAnimationType(animationType);
+      setShowCoinAnimation(true);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setShowCoinAnimation(false);
+      
+      // Now proceed with next question
+      setQuestionsAnswered(prev => prev + 1);
+      setUserAnswer('');
+      moveToNextQuestion();
     } else {
       setGameHistory(prev => [...prev, 'incorrect']);
     }
-    
-    setQuestionsAnswered(prev => prev + 1);
-    setUserAnswer('');
     
     if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
       const endTime = new Date();
@@ -302,6 +356,14 @@ const Addition = () => {
 
   return (
     <div className={`${gameStyles.container} ${gameColors.addition.background}`}>
+      {/* Coin animation that shows when coins are earned */}
+      {showCoinAnimation && (
+        <CoinAnimation 
+          amount={earnedCoins}
+          type={coinAnimationType}
+          onComplete={() => setShowCoinAnimation(false)}
+        />
+      )}
       <div className={gameStyles.innerContainer}>
         {/* Main game content - reduced top spacing for better mobile experience */}
         <div className={`${gameStyles.contentWrapper} mt-2`}>

@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserContext, useUser } from '../contexts/UserContext';
+import { useUser } from '../contexts/UserContext';
 import { Coins, User, LogOut } from 'lucide-react';
 
 /**
@@ -10,6 +10,20 @@ import { Coins, User, LogOut } from 'lucide-react';
 const Navigation: React.FC = () => {
   const { user, coins } = useUser(); // Get both user and coins from context
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <nav className="fixed top-0 w-full bg-white shadow-md z-50">
@@ -35,8 +49,14 @@ const Navigation: React.FC = () => {
             </div>
 
             {/* User avatar and dropdown */}
-            <div className="relative group">
-              <div className="flex items-center space-x-2 cursor-pointer">
+            <div className="relative" ref={menuRef}>
+              <div 
+                className="flex items-center space-x-2 cursor-pointer" 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && setIsMenuOpen(!isMenuOpen)}
+              >
                 {user.photoURL ? (
                   <img
                     src={user.photoURL}
@@ -54,7 +74,11 @@ const Navigation: React.FC = () => {
               </div>
 
               {/* Dropdown menu */}
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block">
+              <div 
+                className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 transform transition-all duration-200 ease-in-out origin-top-right
+                  ${isMenuOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'}`
+                }
+              >
                 <Link 
                   to="/profile" 
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -64,6 +88,7 @@ const Navigation: React.FC = () => {
                 <button
                   onClick={() => {
                     // Handle logout
+                    setIsMenuOpen(false);
                     localStorage.removeItem('user');
                     navigate('/login');
                   }}
