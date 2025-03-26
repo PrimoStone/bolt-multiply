@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
-import { Coins, User, LogOut } from 'lucide-react';
+import { Coins, User, LogOut, Award } from 'lucide-react';
 
 /**
  * Navigation component that displays the app header with logo, user avatar, and coin balance
@@ -84,6 +84,15 @@ const Navigation: React.FC = () => {
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Profile
+                </Link>
+                <Link 
+                  to="/rewards" 
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  <div className="flex items-center">
+                    <Award className="w-4 h-4 mr-2" />
+                    Rewards
+                  </div>
                 </Link>
                 <button
                   onClick={() => {
