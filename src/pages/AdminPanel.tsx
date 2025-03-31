@@ -57,7 +57,7 @@ const AdminPanel: React.FC = () => {
   // Check if user has admin privileges
   // In production, we need to check for specific admin user IDs or names
   // You can add more admin identifiers to this array as needed
-  const adminIdentifiers = ['admin123', 'PanP'];
+  const adminIdentifiers = ['admin123', 'Primo'];
   const isAdmin = (user?.id && adminIdentifiers.includes(user.id)) || 
                   (user?.firstName && adminIdentifiers.includes(user.firstName)) || 
                   process.env.NODE_ENV === 'development';
