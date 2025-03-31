@@ -4,10 +4,10 @@ import { useUser } from '../contexts/UserContext';
 import { Navigate } from 'react-router-dom';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { addAllRewards } from '../scripts/add-rewards';
 import { addStandardAvatars } from '../scripts/add-standard-avatars';
 import FirebaseImageProxy from '../components/avatar/FirebaseImageProxy';
+import { convertToBase64 } from '../firebase/utils';
 
 // Admin panel tabs definition
 type AdminTabType = 'badges' | 'trophies' | 'avatarItems' | 'avatars';
@@ -106,11 +106,6 @@ const AdminPanel: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Generate a unique ID based on timestamp and random number
-  const generateUniqueId = () => {
-    return `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-  };
-
   // Handle image upload
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -135,19 +130,6 @@ const AdminPanel: React.FC = () => {
       setError(null);
       setUploadProgress(0);
 
-      // Generate a unique filename
-      const fileName = `${generateUniqueId()}-${file.name}`;
-      const storage = getStorage();
-      
-      // Set storage reference with custom metadata to help with CORS
-      const storageRef = ref(storage, `${activeTab}/${fileName}`);
-      const metadata = {
-        contentType: file.type,
-        customMetadata: {
-          'Access-Control-Allow-Origin': '*'
-        }
-      };
-
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
@@ -160,30 +142,22 @@ const AdminPanel: React.FC = () => {
         });
       }, 200);
 
-      // Upload the file with metadata
-      await uploadBytes(storageRef, file, metadata);
+      // Convert image to Base64 string instead of uploading to Firebase Storage
+      // This avoids CORS issues completely
+      const base64String = await convertToBase64(file);
+      
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      // Get download URL
-      const url = await getDownloadURL(storageRef);
-      
-      // Use placeholder if CORS issue detected
-      if (url.includes('firebasestorage.googleapis.com')) {
-        // Create a fallback URL with the file name for display purposes
-        const fallbackUrl = `https://via.placeholder.com/150?text=${encodeURIComponent(file.name.split('.')[0])}`;
-        setFormData(prev => ({ 
-          ...prev, 
-          imageUrl: url,
-          // Store both URLs - the real one for database and fallback for display
-          displayImageUrl: fallbackUrl
-        }));
-      } else {
-        setFormData(prev => ({ ...prev, imageUrl: url }));
-      }
+      // Set the Base64 string as the image URL
+      setFormData(prev => ({ 
+        ...prev, 
+        imageUrl: base64String,
+        // No need for displayImageUrl as Base64 strings don't have CORS issues
+      }));
     } catch (err) {
-      console.error('Error uploading image:', err);
-      setError('Failed to upload image. Please try again.');
+      console.error('Error processing image:', err);
+      setError('Failed to process image. Please try again.');
     } finally {
       setUploadingImage(false);
     }
