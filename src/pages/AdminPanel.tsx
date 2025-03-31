@@ -150,10 +150,11 @@ const AdminPanel: React.FC = () => {
       setUploadProgress(100);
 
       // Set the Base64 string as the image URL
+      // Also set the same value for displayImageUrl to avoid undefined errors
       setFormData(prev => ({ 
         ...prev, 
         imageUrl: base64String,
-        // No need for displayImageUrl as Base64 strings don't have CORS issues
+        displayImageUrl: base64String // Set the same Base64 string for displayImageUrl
       }));
     } catch (err) {
       console.error('Error processing image:', err);
