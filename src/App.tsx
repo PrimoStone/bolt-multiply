@@ -13,6 +13,7 @@ import Profile from './components/Profile';
 import Navigation from './components/Navigation';
 import AdminTools from './components/AdminTools';
 import RewardsPage from './pages/RewardsPage';
+import AdminPanel from './pages/AdminPanel';
 
 function App() {
   return (
@@ -33,6 +34,8 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminTools />} />
             <Route path="/rewards" element={<RewardsPage />} />
+            {/* Admin panel route for managing visual reward items */}
+            <Route path="/admin/rewards" element={<AdminPanel />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
