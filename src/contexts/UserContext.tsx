@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth, db } from '../firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 /**
  * User interface representing a user in the system
@@ -11,7 +12,10 @@ interface User {
   lastName: string;
   email: string;
   photoURL?: string;
+  avatarId?: string;  // ID of the selected avatar
+  avatarUrl?: string; // URL of the selected avatar image
   coins: number;
+  displayName?: string;
 }
 
 /**
@@ -27,6 +31,7 @@ interface UserContextType {
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   coins: number;
   updateCoins: (amount: number, type: TransactionType, description: string) => Promise<void>;
+  updateUserData: (userData: User) => void;
 }
 
 // Create the context
@@ -35,6 +40,7 @@ export const UserContext = createContext<UserContextType>({
   setUser: () => {},
   coins: 0,
   updateCoins: async () => {},
+  updateUserData: () => {},
 });
 
 // Custom hook for using the context
@@ -49,7 +55,7 @@ export const useUser = () => {
 /**
  * UserProvider component that manages user state and provides context
  */
-export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     // Try to load user from localStorage on initial render
     const savedUser = localStorage.getItem('user');
@@ -101,12 +107,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // Update user's coin balance in Firestore
       const userRef = doc(db, 'users', user.id);
-      await updateDoc(userRef, {
+      await setDoc(userRef, {
         coins: newCoins
       });
 
       // Log the transaction
-      await addDoc(collection(db, 'coinTransactions'), {
+      await setDoc(doc(db, 'coinTransactions', user.id), {
         userId: user.id,
         amount,
         type,
@@ -132,11 +138,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUserData = (userData: User) => {
+    setUser(userData);
+  };
+
   const value = {
     user,
     setUser,
     coins,
-    updateCoins
+    updateCoins,
+    updateUserData
   };
 
   return (

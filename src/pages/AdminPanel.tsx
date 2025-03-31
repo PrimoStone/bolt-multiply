@@ -6,9 +6,11 @@ import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase
 import { db } from '../firebase/config';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { addAllRewards } from '../scripts/add-rewards';
+import { addStandardAvatars } from '../scripts/add-standard-avatars';
+import FirebaseImageProxy from '../components/avatar/FirebaseImageProxy';
 
 // Admin panel tabs definition
-type AdminTabType = 'badges' | 'trophies' | 'avatarItems';
+type AdminTabType = 'badges' | 'trophies' | 'avatarItems' | 'avatars';
 
 // Item types
 type ItemType = {
@@ -16,6 +18,7 @@ type ItemType = {
   name: string;
   description: string;
   imageUrl: string;
+  displayImageUrl?: string;
   createdAt: Date;
   [key: string]: any; // Allow additional properties
 };
@@ -36,11 +39,17 @@ const AdminPanel: React.FC = () => {
     name: '',
     description: '',
     imageUrl: '',
+    displayImageUrl: '',
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [addingStandardRewards, setAddingStandardRewards] = useState(false);
   const [standardRewardsMessage, setStandardRewardsMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const [addingStandardAvatars, setAddingStandardAvatars] = useState(false);
+  const [standardAvatarsMessage, setStandardAvatarsMessage] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
@@ -54,6 +63,7 @@ const AdminPanel: React.FC = () => {
       case 'badges': return 'badges';
       case 'trophies': return 'trophies';
       case 'avatarItems': return 'avatarItems';
+      case 'avatars': return 'avatars';
       default: return 'badges';
     }
   };
@@ -123,7 +133,15 @@ const AdminPanel: React.FC = () => {
       // Generate a unique filename
       const fileName = `${generateUniqueId()}-${file.name}`;
       const storage = getStorage();
+      
+      // Set storage reference with custom metadata to help with CORS
       const storageRef = ref(storage, `${activeTab}/${fileName}`);
+      const metadata = {
+        contentType: file.type,
+        customMetadata: {
+          'Access-Control-Allow-Origin': '*'
+        }
+      };
 
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
@@ -137,14 +155,27 @@ const AdminPanel: React.FC = () => {
         });
       }, 200);
 
-      // Upload the file
-      await uploadBytes(storageRef, file);
+      // Upload the file with metadata
+      await uploadBytes(storageRef, file, metadata);
       clearInterval(progressInterval);
       setUploadProgress(100);
 
       // Get download URL
       const url = await getDownloadURL(storageRef);
-      setFormData(prev => ({ ...prev, imageUrl: url }));
+      
+      // Use placeholder if CORS issue detected
+      if (url.includes('firebasestorage.googleapis.com')) {
+        // Create a fallback URL with the file name for display purposes
+        const fallbackUrl = `https://via.placeholder.com/150?text=${encodeURIComponent(file.name.split('.')[0])}`;
+        setFormData(prev => ({ 
+          ...prev, 
+          imageUrl: url,
+          // Store both URLs - the real one for database and fallback for display
+          displayImageUrl: fallbackUrl
+        }));
+      } else {
+        setFormData(prev => ({ ...prev, imageUrl: url }));
+      }
     } catch (err) {
       console.error('Error uploading image:', err);
       setError('Failed to upload image. Please try again.');
@@ -159,6 +190,7 @@ const AdminPanel: React.FC = () => {
       name: '',
       description: '',
       imageUrl: '',
+      displayImageUrl: '',
     });
     setEditingItem(null);
   };
@@ -170,6 +202,7 @@ const AdminPanel: React.FC = () => {
       name: item.name,
       description: item.description,
       imageUrl: item.imageUrl,
+      displayImageUrl: item.displayImageUrl || item.imageUrl,
     });
     setShowForm(true);
   };
@@ -277,6 +310,41 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  // Handle adding standard avatars
+  const handleAddStandardAvatars = async () => {
+    try {
+      setAddingStandardAvatars(true);
+      setStandardAvatarsMessage(null);
+      
+      // Call the function to add standard avatars
+      const result = await addStandardAvatars();
+      
+      if (result.success) {
+        setStandardAvatarsMessage({
+          type: 'success',
+          text: 'Standard avatars added successfully! Refresh the page to see them.'
+        });
+        // Refresh the current tab's items if we're on the avatars tab
+        if (activeTab === 'avatars') {
+          fetchItems();
+        }
+      } else {
+        setStandardAvatarsMessage({
+          type: 'error',
+          text: `Error adding standard avatars: ${result.message}`
+        });
+      }
+    } catch (error) {
+      console.error('Error adding standard avatars:', error);
+      setStandardAvatarsMessage({
+        type: 'error',
+        text: 'An unexpected error occurred while adding standard avatars.'
+      });
+    } finally {
+      setAddingStandardAvatars(false);
+    }
+  };
+
   // Redirect non-admin users
   if (!isAdmin) {
     return <Navigate to="/" replace />;
@@ -322,6 +390,34 @@ const AdminPanel: React.FC = () => {
           )}
         </div>
 
+        {/* Standard Avatars Button */}
+        <div className="p-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-medium text-gray-800">Standard Avatars</h2>
+              <p className="text-sm text-gray-600">Add all standard avatars as defined in the REWARD_SYSTEM_PLAN.md</p>
+            </div>
+            <button
+              onClick={handleAddStandardAvatars}
+              disabled={addingStandardAvatars}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:opacity-50"
+            >
+              {addingStandardAvatars ? 'Adding...' : 'Add Standard Avatars'}
+            </button>
+          </div>
+          
+          {/* Standard avatars message */}
+          {standardAvatarsMessage && (
+            <div className={`mt-3 p-3 rounded ${
+              standardAvatarsMessage.type === 'success' 
+                ? 'bg-green-100 text-green-700 border border-green-400' 
+                : 'bg-red-100 text-red-700 border border-red-400'
+            }`}>
+              {standardAvatarsMessage.text}
+            </div>
+          )}
+        </div>
+
         {/* Custom tabs implementation */}
         <div className="p-4">
           {/* Tab headers */}
@@ -356,6 +452,16 @@ const AdminPanel: React.FC = () => {
             >
               Avatar Items
             </button>
+            <button 
+              onClick={() => setActiveTab('avatars')}
+              className={`px-4 py-2 focus:outline-none ${
+                activeTab === 'avatars' 
+                  ? 'border-b-2 border-blue-500 text-blue-600 font-medium' 
+                  : 'text-gray-600 hover:text-blue-500'
+              }`}
+            >
+              Avatars
+            </button>
           </div>
 
           {/* Tab content */}
@@ -363,7 +469,8 @@ const AdminPanel: React.FC = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-800">
                 {activeTab === 'badges' ? 'Badge' : 
-                 activeTab === 'trophies' ? 'Trophy' : 'Avatar Item'} Management
+                 activeTab === 'trophies' ? 'Trophy' : 
+                 activeTab === 'avatarItems' ? 'Avatar Item' : 'Avatar'} Management
               </h2>
               <button
                 onClick={() => {
@@ -373,7 +480,8 @@ const AdminPanel: React.FC = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
               >
                 {showForm ? 'Cancel' : `Add New ${activeTab === 'badges' ? 'Badge' : 
-                                        activeTab === 'trophies' ? 'Trophy' : 'Avatar Item'}`}
+                                        activeTab === 'trophies' ? 'Trophy' : 
+                                        activeTab === 'avatarItems' ? 'Avatar Item' : 'Avatar'}`}
               </button>
             </div>
 
@@ -389,9 +497,11 @@ const AdminPanel: React.FC = () => {
               <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
                 <h3 className="text-lg font-medium">
                   {editingItem ? `Edit ${activeTab === 'badges' ? 'Badge' : 
-                                 activeTab === 'trophies' ? 'Trophy' : 'Avatar Item'}` : 
+                                 activeTab === 'trophies' ? 'Trophy' : 
+                                 activeTab === 'avatarItems' ? 'Avatar Item' : 'Avatar'}` : 
                                 `Create New ${activeTab === 'badges' ? 'Badge' : 
-                                            activeTab === 'trophies' ? 'Trophy' : 'Avatar Item'}`}
+                                            activeTab === 'trophies' ? 'Trophy' : 
+                                            activeTab === 'avatarItems' ? 'Avatar Item' : 'Avatar'}`}
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -428,10 +538,11 @@ const AdminPanel: React.FC = () => {
                       {/* Image preview */}
                       <div className="w-40 h-40 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
                         {formData.imageUrl ? (
-                          <img 
-                            src={formData.imageUrl} 
-                            alt="Preview" 
-                            className="w-full h-full object-contain" 
+                          <FirebaseImageProxy
+                            src={formData.imageUrl}
+                            alt={formData.name}
+                            className="w-full h-full object-contain"
+                            fallbackSrc={`https://via.placeholder.com/150?text=${encodeURIComponent(formData.name.charAt(0))}`}
                           />
                         ) : (
                           <div className="text-center text-gray-500">
@@ -527,10 +638,11 @@ const AdminPanel: React.FC = () => {
                         <tr key={item.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex-shrink-0 h-10 w-10">
-                              <img
-                                className="h-10 w-10 rounded-full object-cover"
+                              <FirebaseImageProxy
                                 src={item.imageUrl}
                                 alt={item.name}
+                                className="h-10 w-10 rounded-full object-cover"
+                                fallbackSrc={`https://via.placeholder.com/150?text=${encodeURIComponent(item.name.charAt(0))}`}
                               />
                             </div>
                           </td>

@@ -14,6 +14,7 @@ import Navigation from './components/Navigation';
 import AdminTools from './components/AdminTools';
 import RewardsPage from './pages/RewardsPage';
 import AdminPanel from './pages/AdminPanel';
+import UserProfile from './pages/UserProfile';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/subtraction" element={<Subtraction />} />
             <Route path="/proof" element={<Proof />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/user/profile" element={<UserProfile />} />
             <Route path="/admin" element={<AdminTools />} />
             <Route path="/rewards" element={<RewardsPage />} />
             {/* Admin panel route for managing visual reward items */}
