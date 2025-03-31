@@ -55,10 +55,12 @@ const AdminPanel: React.FC = () => {
   } | null>(null);
 
   // Check if user has admin privileges
-  // In production, we need to check for specific admin user IDs
-  // You can add more admin IDs to this array as needed
-  const adminUserIds = ['admin123', 'PanP'];
-  const isAdmin = user?.id && adminUserIds.includes(user.id) || process.env.NODE_ENV === 'development';
+  // In production, we need to check for specific admin user IDs or names
+  // You can add more admin identifiers to this array as needed
+  const adminIdentifiers = ['admin123', 'PanP'];
+  const isAdmin = (user?.id && adminIdentifiers.includes(user.id)) || 
+                  (user?.firstName && adminIdentifiers.includes(user.firstName)) || 
+                  process.env.NODE_ENV === 'development';
 
   // Get collection name based on active tab
   const getCollectionName = (): string => {
