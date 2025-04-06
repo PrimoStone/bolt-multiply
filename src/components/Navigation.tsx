@@ -80,18 +80,12 @@ const Navigation: React.FC = () => {
                 }
               >
                 <Link 
-                  to="/profile" 
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Profile
-                </Link>
-                <Link 
                   to="/user/profile" 
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   <div className="flex items-center">
                     <User className="w-4 h-4 mr-2" />
-                    Avatar Settings
+                    Profile
                   </div>
                 </Link>
                 <Link 

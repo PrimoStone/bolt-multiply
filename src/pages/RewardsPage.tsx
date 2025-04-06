@@ -1,12 +1,12 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import RewardsDashboard from '../components/rewards/RewardsDashboard';
+import UserCards from '../components/UserCards';
 import { RewardProvider } from '../contexts/RewardContext';
 
 /**
  * RewardsPage component
  * 
- * Displays the rewards dashboard with all reward-related components
+ * Displays the unified user dashboard with swipeable cards for profile, avatar settings, and rewards
  * Wrapped in the RewardProvider to ensure reward data is available
  */
 const RewardsPage: React.FC = () => {
@@ -18,7 +18,7 @@ const RewardsPage: React.FC = () => {
       
       <div className="container mx-auto px-4 py-8">
         <RewardProvider>
-          <RewardsDashboard />
+          <UserCards />
         </RewardProvider>
       </div>
     </>

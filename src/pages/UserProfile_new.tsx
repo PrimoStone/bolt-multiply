@@ -1,5 +1,5 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { Helmet } from 'react-helmet';
 import UserCards from '../components/UserCards';
 import { RewardProvider } from '../contexts/RewardContext';
 
