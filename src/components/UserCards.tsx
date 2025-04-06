@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useRewards } from '../contexts/RewardContext';
-import AvatarSelector, { Avatar } from './avatar/AvatarSelector';
+import AvatarSelector from './avatar/AvatarSelector';
 import BadgeDisplay from './rewards/BadgeDisplay';
 import TrophyDisplay from './rewards/TrophyDisplay';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -9,11 +9,21 @@ import { db } from '../firebase/config';
 import { ChevronLeft, ChevronRight, User, Award, Settings } from 'lucide-react';
 import { useUserStats } from '../hooks/useUserStats';
 
+// Import types
+import { Badge, Trophy } from '../types/rewardTypes';
+
+// Define Avatar type if not available in a separate file
+interface Avatar {
+  id: string;
+  name: string;
+  imageUrl: string;
+  isDefault?: boolean;
+}
+
 /**
  * UserCards component 
- * 
- * A mobile-first component that combines user profile, avatar settings, and rewards
- * into a swipeable card-based interface with flipping card effects.
+ * Provides a swipeable card interface for user profile, avatar customization, and rewards
+ * @returns {JSX.Element}
  */
 const UserCards: React.FC = () => {
   // Get user and rewards data from contexts
@@ -333,18 +343,8 @@ const UserCards: React.FC = () => {
           </button>
         </div>
         
-        {/* Card container with swipe functionality */}
-        <div 
-          className="relative"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={() => isDragging && handleMouseUp()}
-          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-        >
+        {/* Card container */}
+        <div className="relative">
           {/* Swipe indicators */}
           {swipeDirection && (
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-between px-4">
@@ -370,7 +370,18 @@ const UserCards: React.FC = () => {
           {/* Profile Card */}
           {activeCard === 'profile' && (
             <div className="bg-white rounded-xl shadow-lg overflow-hidden md:max-w-2xl md:mx-auto">
-              <div className="bg-blue-600 text-white p-6">
+              {/* Card header - swipeable area */}
+              <div 
+                className="bg-blue-600 text-white p-6 cursor-grab"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={() => isDragging && handleMouseUp()}
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              >
                 <h2 className="text-2xl font-bold">Your Profile</h2>
               </div>
               
@@ -387,10 +398,12 @@ const UserCards: React.FC = () => {
                       />
                     ) : (
                       <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                        <User className="w-12 h-12 text-blue-600" />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c1.474 0 2.946.644 4.204 1.732M12 10h.01M15.495 14.305A7.035 7.035 0 006 13c-1.1 0-2 .9-2 2a7.002 7.002 0 014 13 9 9 0 01-18 0z" />
+                        </svg>
                       </div>
                     )}
-                    <h3 className="text-xl font-semibold">
+                    <h3 className="text-lg font-medium text-gray-800">
                       {user.firstName} {user.lastName}
                     </h3>
                     <p className="text-gray-600">{user.email}</p>
@@ -407,10 +420,6 @@ const UserCards: React.FC = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Coins Balance:</span>
                         <span className="font-medium">{user.coins || 0}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Badges Earned:</span>
-                        <span className="font-medium">{userBadges.length} / {badges.length}</span>
                       </div>
                     </div>
                   </div>
@@ -648,14 +657,6 @@ const UserCards: React.FC = () => {
                     </div>
                     
                     <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-700">Total Badges:</span>
-                      <span className="text-blue-600 font-bold">{userBadges.length} / {badges.length}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-700">Total Trophies:</span>
-                      <span className="text-blue-600 font-bold">{userTrophies.length} / {trophies.length}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
                       <span className="font-medium text-gray-700">Coins:</span>
                       <span className="text-blue-600 font-bold">{user.coins || 0}</span>
                     </div>
@@ -665,15 +666,15 @@ const UserCards: React.FC = () => {
                       <h4 className="font-medium text-gray-700 mb-2">Game Progress</h4>
                       <div className="bg-blue-100 rounded-lg p-3">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">Badge Completion:</span>
+                          <span className="text-sm text-gray-600">Game Completion:</span>
                           <span className="text-sm font-medium">
-                            {badges.length > 0 ? Math.round((userBadges.length / badges.length) * 100) : 0}%
+                            {multiplicationStats?.stats?.overall?.totalGames ?? 0} games
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2.5">
                           <div 
                             className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${badges.length > 0 ? (userBadges.length / badges.length) * 100 : 0}%` }}
+                            style={{ width: `${Math.min(((multiplicationStats?.stats?.overall?.totalGames ?? 0) / 100) * 100, 100)}%` }}
                           ></div>
                         </div>
                       </div>
@@ -696,7 +697,18 @@ const UserCards: React.FC = () => {
           {/* Avatar Customization Card */}
           {activeCard === 'avatar' && (
             <div className="bg-white rounded-xl shadow-lg overflow-hidden md:max-w-2xl md:mx-auto">
-              <div className="bg-purple-600 text-white p-6">
+              {/* Card header - swipeable area */}
+              <div 
+                className="bg-purple-600 text-white p-6 cursor-grab"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={() => isDragging && handleMouseUp()}
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              >
                 <h2 className="text-2xl font-bold">Avatar Settings</h2>
               </div>
               
@@ -711,7 +723,9 @@ const UserCards: React.FC = () => {
                     />
                   ) : (
                     <div className="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                      <User className="w-12 h-12 text-purple-600" />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c1.474 0 2.946.644 4.204 1.732M12 10h.01M15.495 14.305A7.035 7.035 0 006 13c-1.1 0-2 .9-2 2a7.002 7.002 0 014 13 9 9 0 01-18 0z" />
+                      </svg>
                     </div>
                   )}
                   <h3 className="text-lg font-medium text-gray-800">Current Avatar</h3>
@@ -731,9 +745,9 @@ const UserCards: React.FC = () => {
                 {/* Avatar selection section */}
                 <div className="mb-6">
                   <h3 className="text-lg font-medium text-gray-800 mb-4">Choose Your Avatar</h3>
-                  <AvatarSelector
+                  <AvatarSelector 
                     selectedAvatarId={selectedAvatar?.id || null}
-                    onSelectAvatar={handleSelectAvatar}
+                    onSelectAvatar={handleSelectAvatar} 
                     showOnlyDefaults={true}
                     className="mb-4"
                   />
@@ -753,7 +767,18 @@ const UserCards: React.FC = () => {
           {/* Rewards Card */}
           {activeCard === 'rewards' && (
             <div className="bg-white rounded-xl shadow-lg overflow-hidden md:max-w-2xl md:mx-auto">
-              <div className="bg-yellow-600 text-white p-6">
+              {/* Card header - swipeable area */}
+              <div 
+                className="bg-yellow-600 text-white p-6 cursor-grab"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={() => isDragging && handleMouseUp()}
+                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              >
                 <h2 className="text-2xl font-bold">Your Rewards</h2>
                 
                 {/* Rewards Tab Navigation */}
@@ -787,13 +812,13 @@ const UserCards: React.FC = () => {
                   <BadgeDisplay 
                     badges={badges} 
                     userBadges={userBadges} 
-                    onBadgeClick={(badge, earned) => console.log(`Badge clicked: ${badge.id}, earned: ${earned}`)} 
+                    onBadgeClick={(badge: Badge, earned: boolean) => console.log(`Badge clicked: ${badge.id}, earned: ${earned}`)} 
                   />
                 ) : (
                   <TrophyDisplay 
                     trophies={trophies} 
                     userTrophies={userTrophies} 
-                    onTrophyClick={(trophy, earned) => console.log(`Trophy clicked: ${trophy.id}, earned: ${earned}`)} 
+                    onTrophyClick={(trophy: Trophy, earned: boolean) => console.log(`Trophy clicked: ${trophy.id}, earned: ${earned}`)} 
                   />
                 )}
               </div>
