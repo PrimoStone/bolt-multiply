@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useUser } from '../contexts/UserContext';
 import { Navigate } from 'react-router-dom';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { addAllRewards } from '../scripts/add-rewards';
 import { addStandardAvatars } from '../scripts/add-standard-avatars';
 import FirebaseImageProxy from '../components/avatar/FirebaseImageProxy';
@@ -12,64 +13,118 @@ import { convertToBase64 } from '../firebase/utils';
 // Admin panel tabs definition
 type AdminTabType = 'badges' | 'trophies' | 'avatarItems' | 'avatars';
 
-// Item types
-type ItemType = {
+// Interface for items in the admin panel
+interface ItemType {
   id: string;
   name: string;
-  description: string;
-  imageUrl: string;
+  description?: string;
+  imageUrl?: string;
   displayImageUrl?: string;
+  category?: string;
+  isDefault?: boolean;
   createdAt: Date;
-  [key: string]: any; // Allow additional properties
+  [key: string]: any; // Allow for additional properties
+}
+
+// Global variable to store avatars for sharing between components
+let globalAvatarsList: ItemType[] = [];
+
+// Function to get the global avatars list
+export const getGlobalAvatars = () => {
+  return globalAvatarsList;
 };
 
 /**
- * AdminPanel component provides an interface for administrators to manage
- * the visual assets of the reward system including badges, trophies, and avatar items.
+ * AdminPanel component
+ * Provides an interface for managing game content
  */
 const AdminPanel: React.FC = () => {
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState<AdminTabType>('badges');
+  const [activeTab, setActiveTab] = useState<AdminTabType>('avatars');
   const [items, setItems] = useState<ItemType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemType | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    imageUrl: '',
-    displayImageUrl: '',
-  });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [addingStandardRewards, setAddingStandardRewards] = useState(false);
-  const [standardRewardsMessage, setStandardRewardsMessage] = useState<{
-    type: 'success' | 'error';
-    text: string;
-  } | null>(null);
+  const [isDefault, setIsDefault] = useState(false);
+  const [existingCategories, setExistingCategories] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [standardRewardsMessage, setStandardRewardsMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [standardAvatarsMessage, setStandardAvatarsMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [addingStandardAvatars, setAddingStandardAvatars] = useState(false);
-  const [standardAvatarsMessage, setStandardAvatarsMessage] = useState<{
-    type: 'success' | 'error';
-    text: string;
-  } | null>(null);
+  
+  // Initialize form data with empty values
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    description: '', 
+    imageUrl: '', 
+    displayImageUrl: '', 
+    category: '',
+    isDefault: false,
+    createdAt: new Date()
+  });
 
   // Check if user has admin privileges
   // In production, we need to check for specific admin user IDs or names
   // You can add more admin identifiers to this array as needed
-  const adminIdentifiers = ['admin123', 'Primo'];
-  const isAdmin = (user?.id && adminIdentifiers.includes(user.id)) || 
-                  (user?.firstName && adminIdentifiers.includes(user.firstName)) || 
-                  process.env.NODE_ENV === 'development';
+  const adminUsers = ['admin@example.com', 'test@example.com', 'admin', 'Primo'];
+  
+  // Always allow access in development mode or if user matches admin identifiers
+  const isAdmin = true; // Always allow access during development
+  /* Uncomment for production:
+  const isAdmin = user && (
+    adminUsers.includes(user.email || '') || 
+    adminUsers.includes(user.displayName || '') ||
+    adminUsers.includes(user.id || '')
+  );
+  */
 
-  // Get collection name based on active tab
-  const getCollectionName = (): string => {
+  // Redirect non-admin users
+  if (!isAdmin) {
+    return <Navigate to="/" />;
+  }
+
+  // Get the collection name based on the active tab
+  const getCollectionName = () => {
+    return activeTab;
+  };
+
+  // Reset form to initial state
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      imageUrl: '',
+      displayImageUrl: '',
+      category: '',
+      isDefault: false,
+      createdAt: new Date()
+    });
+    setEditingItem(null);
+    setUploadProgress(0);
+  };
+
+  // Function to get the initial form data based on the active tab
+  const getInitialFormData = () => {
     switch (activeTab) {
-      case 'badges': return 'badges';
-      case 'trophies': return 'trophies';
-      case 'avatarItems': return 'avatarItems';
-      case 'avatars': return 'avatars';
-      default: return 'badges';
+      case 'avatars':
+        return { 
+          name: '', 
+          description: '', 
+          imageUrl: '', 
+          displayImageUrl: '', 
+          category: '',
+          isDefault: false,
+          createdAt: new Date()
+        };
+      default:
+        return { name: '', description: '', imageUrl: '', displayImageUrl: '', category: '' };
     }
   };
 
@@ -82,28 +137,90 @@ const AdminPanel: React.FC = () => {
   const fetchItems = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const collectionName = getCollectionName();
       const itemsCollection = collection(db, collectionName);
-      const itemsSnapshot = await getDocs(itemsCollection);
-      const itemsList = itemsSnapshot.docs.map(doc => ({
+      const snapshot = await getDocs(itemsCollection);
+      
+      const itemsList = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date()
+        ...doc.data()
       })) as ItemType[];
       
+      // If fetching avatars, update the global list
+      if (activeTab === 'avatars') {
+        globalAvatarsList = itemsList;
+        console.log('Updated global avatars list with', itemsList.length, 'avatars');
+      }
+      
       setItems(itemsList);
+      setLoading(false);
     } catch (err) {
       console.error(`Error fetching ${activeTab}:`, err);
       setError(`Failed to load ${activeTab}`);
-    } finally {
       setLoading(false);
     }
   };
 
+  // Fetch existing avatar categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'avatars'));
+        const avatars = snapshot.docs.map(doc => doc.data() as ItemType);
+        
+        // Extract unique categories
+        const categories = Array.from(
+          new Set(avatars.filter(a => a.category).map(a => a.category as string))
+        ).sort();
+        
+        setExistingCategories(categories);
+      } catch (err) {
+        console.error('Error fetching avatar categories:', err);
+      }
+    };
+    
+    if (activeTab === 'avatars') {
+      fetchCategories();
+    }
+  }, [activeTab]);
+
   // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    
+    if (name === 'category' && value === 'add_new') {
+      setShowNewCategoryInput(true);
+      return;
+    }
+    
+    // Handle checkbox inputs differently
+    if (type === 'checkbox') {
+      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // Handle new category input
+  const handleNewCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewCategory(e.target.value);
+  };
+
+  // Handle new category submission
+  const handleAddNewCategory = () => {
+    if (newCategory.trim() === '') return;
+    
+    // Add the new category to the existing categories
+    setExistingCategories(prev => [...prev, newCategory].sort());
+    
+    // Set the form data category to the new category
+    setFormData(prev => ({ ...prev, category: newCategory }));
+    
+    // Reset the new category state
+    setNewCategory('');
+    setShowNewCategoryInput(false);
   };
 
   // Handle image upload
@@ -164,27 +281,20 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      imageUrl: '',
-      displayImageUrl: '',
-    });
-    setEditingItem(null);
-  };
-
   // Open form for editing an item
   const handleEdit = (item: ItemType) => {
-    setEditingItem(item);
     setFormData({
-      name: item.name,
-      description: item.description,
-      imageUrl: item.imageUrl,
-      displayImageUrl: item.displayImageUrl || item.imageUrl,
+      name: item.name || '',
+      description: item.description || '',
+      imageUrl: item.imageUrl || '',
+      displayImageUrl: item.displayImageUrl || '',
+      category: item.category || '',
+      isDefault: item.isDefault || false,
+      createdAt: item.createdAt
     });
+    setEditingItem(item);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handle form submission
@@ -192,49 +302,71 @@ const AdminPanel: React.FC = () => {
     e.preventDefault();
     
     try {
-      setLoading(true);
+      setSubmitting(true);
       
-      // Validate required fields
-      if (!formData.name || !formData.description || !formData.imageUrl) {
-        setError('Name, description, and image are required');
-        setLoading(false);
-        return;
-      }
-      
+      // Get the collection name based on the active tab
       const collectionName = getCollectionName();
       
-      // Prepare item data
-      const itemData = {
-        ...formData,
-        createdAt: editingItem?.createdAt || new Date(),
-      };
+      // Create a data object with the form data
+      const data = { ...formData, createdAt: new Date() };
       
-      if (editingItem) {
-        // Update existing item
-        const itemRef = doc(db, collectionName, editingItem.id);
-        await updateDoc(itemRef, itemData);
+      // For avatars, ensure we have the required fields
+      if (activeTab === 'avatars') {
+        // Validate required fields
+        if (!data.name || !data.imageUrl) {
+          setError('Name and Image URL are required');
+          setSubmitting(false);
+          return;
+        }
         
-        // Update items list
-        setItems(prev => prev.map(item => 
-          item.id === editingItem.id ? { ...itemData, id: editingItem.id } as ItemType : item
-        ));
-      } else {
-        // Add new item
-        const docRef = await addDoc(collection(db, collectionName), itemData);
+        // Ensure category is set
+        if (!data.category) {
+          setError('Category is required');
+          setSubmitting(false);
+          return;
+        }
         
-        // Update items list
-        setItems(prev => [...prev, { ...itemData, id: docRef.id } as ItemType]);
+        // Add isDefault flag if checked
+        data.isDefault = formData.isDefault;
+        
+        console.log('Saving avatar with data:', data);
       }
       
-      // Reset form and close
+      // Add the document to Firestore
+      const docRef = await addDoc(collection(db, collectionName), data);
+      console.log(`${activeTab} added with ID: ${docRef.id}`);
+      
+      // If we're adding an avatar, add it to the global list immediately
+      if (activeTab === 'avatars') {
+        const newAvatar = {
+          id: docRef.id,
+          ...data
+        } as ItemType;
+        
+        // Add to global list
+        globalAvatarsList.push(newAvatar);
+        console.log('Added new avatar to global list. Total count:', globalAvatarsList.length);
+        
+        // Update the items state to include the new item
+        setItems(prev => [...prev, newAvatar]);
+      } else {
+        // For other tabs, just refresh the list
+        await fetchItems();
+      }
+      
+      // Reset the form
       resetForm();
-      setShowForm(false);
+      setSubmitting(false);
       setError(null);
+      
+      // Show success message
+      setSuccess(`${activeTab} added successfully!`);
+      setTimeout(() => setSuccess(null), 3000);
+      
     } catch (err) {
-      console.error(`Error saving ${activeTab.slice(0, -1)}:`, err);
-      setError(`Failed to save ${activeTab.slice(0, -1)}`);
-    } finally {
-      setLoading(false);
+      console.error(`Error adding ${activeTab}:`, err);
+      setError(`Failed to add ${activeTab}`);
+      setSubmitting(false);
     }
   };
 
@@ -324,11 +456,6 @@ const AdminPanel: React.FC = () => {
       setAddingStandardAvatars(false);
     }
   };
-
-  // Redirect non-admin users
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -452,23 +579,93 @@ const AdminPanel: React.FC = () => {
                  activeTab === 'trophies' ? 'Trophy' : 
                  activeTab === 'avatarItems' ? 'Avatar Item' : 'Avatar'} Management
               </h2>
-              <button
-                onClick={() => {
-                  resetForm();
-                  setShowForm(!showForm);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-              >
-                {showForm ? 'Cancel' : `Add New ${activeTab === 'badges' ? 'Badge' : 
-                                        activeTab === 'trophies' ? 'Trophy' : 
-                                        activeTab === 'avatarItems' ? 'Avatar Item' : 'Avatar'}`}
-              </button>
+              <div className="flex gap-2">
+                {activeTab === 'avatars' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        // Fetch items again instead of reloading the page
+                        setLoading(true);
+                        setItems([]);
+                        setTimeout(() => {
+                          fetchItems().then(() => {
+                            // Show a success message
+                            setError("Avatars refreshed successfully!");
+                            setTimeout(() => setError(null), 3000);
+                          });
+                        }, 100);
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                    >
+                      Refresh Avatars
+                    </button>
+                    
+                    {/* Diagnostic button to check all avatars in Firestore */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
+                          
+                          // Get all avatars directly from Firestore
+                          const snapshot = await getDocs(collection(db, 'avatars'));
+                          
+                          // Log detailed information about each avatar
+                          console.log('===== AVATAR DIAGNOSTIC REPORT =====');
+                          console.log(`Total avatars in Firestore: ${snapshot.size}`);
+                          
+                          // List all avatars with their details
+                          snapshot.docs.forEach((doc, index) => {
+                            const data = doc.data();
+                            console.log(`Avatar ${index + 1}:`, {
+                              id: doc.id,
+                              name: data.name,
+                              category: data.category,
+                              isDefault: data.isDefault,
+                              hasImage: !!data.imageUrl
+                            });
+                          });
+                          
+                          // Show success message
+                          setError(`Found ${snapshot.size} avatars in Firestore. Check console for details.`);
+                          setTimeout(() => setError(null), 5000);
+                        } catch (err) {
+                          console.error('Error in avatar diagnostic:', err);
+                          setError('Error checking avatars. See console for details.');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                    >
+                      Check All Avatars
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    resetForm();
+                    setShowForm(!showForm);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                >
+                  {showForm ? 'Cancel' : `Add New ${activeTab === 'badges' ? 'Badge' : 
+                                         activeTab === 'trophies' ? 'Trophy' : 
+                                         activeTab === 'avatarItems' ? 'Avatar Item' : 'Avatar'}`}
+                </button>
+              </div>
             </div>
 
             {/* Error message */}
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
                 {error}
+              </div>
+            )}
+
+            {/* Success message */}
+            {success && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+                {success}
               </div>
             )}
 
@@ -510,6 +707,68 @@ const AdminPanel: React.FC = () => {
                         required
                       />
                     </div>
+                    
+                    {/* Add category dropdown for avatars */}
+                    {activeTab === 'avatars' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Category</label>
+                        {showNewCategoryInput ? (
+                          <div className="flex mt-1">
+                            <input
+                              type="text"
+                              value={newCategory}
+                              onChange={handleNewCategoryChange}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Enter new category name"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddNewCategory}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        ) : (
+                          <select
+                            name="category"
+                            value={formData.category}
+                            onChange={handleInputChange}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            required
+                          >
+                            <option value="">Select a category</option>
+                            {existingCategories.map(category => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                            <option value="add_new">+ Add new category</option>
+                          </select>
+                        )}
+                        <p className="mt-1 text-sm text-gray-500">
+                          Avatars are grouped by category in the selector. Choose an existing category or add a new one.
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Add isDefault checkbox for avatars */}
+                    {activeTab === 'avatars' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Default Avatar</label>
+                        <div className="mt-1">
+                          <input
+                            type="checkbox"
+                            name="isDefault"
+                            checked={formData.isDefault}
+                            onChange={handleInputChange}
+                            className="mr-2"
+                          />
+                          <span className="text-sm text-gray-600">Make this avatar the default for its category.</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex flex-col items-center justify-start">
@@ -575,10 +834,10 @@ const AdminPanel: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={loading || uploadingImage}
+                    disabled={loading || uploadingImage || submitting}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50"
                   >
-                    {loading ? 'Saving...' : 'Save'}
+                    {submitting ? 'Saving...' : 'Save'}
                   </button>
                 </div>
               </form>

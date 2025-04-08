@@ -387,65 +387,70 @@ const UserCards: React.FC = () => {
               
               {!isFlipped ? (
                 // Front of card - Profile view based on the image
-                <div className="p-6">
-                  {/* New layout based on the image */}
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* Left side - Avatar */}
-                    <div className="flex-shrink-0 flex justify-center">
-                      {user.photoURL ? (
+                <div className="p-4">
+                  {/* New layout based on the image - always two columns */}
+                  <div className="flex flex-row gap-4">
+                    {/* Left column - Avatar */}
+                    <div className="flex-shrink-0 flex items-start w-[60%]">
+                      {/* Use a normal image with original proportions */}
+                      {selectedAvatar?.imageUrl || user.photoURL || user.avatarUrl ? (
                         <img 
-                          src={user.photoURL} 
-                          alt={`${user.firstName}'s profile`} 
-                          className="w-48 h-48 object-cover rounded-lg shadow-md"
+                          src={selectedAvatar?.imageUrl || user.photoURL || user.avatarUrl || ''} 
+                          alt={`${user.firstName}'s avatar`}
+                          className="max-w-full h-auto rounded-md border border-gray-200"
                           onError={(e) => {
                             // Fallback if image fails to load
                             e.currentTarget.src = `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=random&size=200`;
                           }}
                         />
                       ) : (
-                        <div className="w-48 h-48 rounded-lg bg-blue-100 flex items-center justify-center shadow-md">
-                          <User className="w-24 h-24 text-blue-600" />
+                        <div className="w-full aspect-square bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center rounded-md">
+                          <User className="w-16 h-16 text-indigo-600" />
                         </div>
                       )}
                     </div>
                     
-                    {/* Right side - User info and stats */}
-                    <div className="flex-grow flex flex-col">
-                      {/* User name */}
-                      <div className="mb-4">
-                        <h3 className="text-2xl font-bold uppercase">
+                    {/* Right column - User info and stats */}
+                    <div className="flex-grow w-[40%] text-right">
+                      {/* User name with subtle decoration */}
+                      <div className="mb-2 border-b border-gray-200 pb-1">
+                        <h3 className="text-base font-bold uppercase tracking-wide">
                           {user.displayName || `${user.firstName} ${user.lastName}`}
                         </h3>
-                        <p className="text-gray-600 uppercase text-sm">USER NAME</p>
+                        <p className="text-gray-500 uppercase text-xs tracking-wider">USER PROFILE</p>
                       </div>
                       
-                      {/* Coin balance */}
-                      <div className="mb-6">
-                        <h4 className="text-xl font-bold">COIN BALANCE</h4>
-                        <div className="flex items-center">
-                          <div className="w-6 h-6 rounded-full bg-yellow-400 mr-2"></div>
-                          <span className="text-xl font-bold">{user.coins || 0}</span>
+                      {/* Coin balance with improved visual */}
+                      <div className="mb-2">
+                        <h4 className="text-xs font-bold uppercase text-gray-700 flex items-center justify-end">
+                          COIN BALANCE <span className="ml-1">•</span>
+                        </h4>
+                        <div className="flex items-center justify-end ml-4 mt-1">
+                          <span className="text-sm font-bold">{user.coins || 0}</span>
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-yellow-300 to-yellow-500 ml-2 shadow-sm"></div>
                         </div>
                       </div>
                       
-                      {/* Game statistics */}
+                      {/* Game statistics with compact design */}
                       <div>
-                        <h4 className="text-xl font-bold mb-2">Game Statistics</h4>
-                        <div className="space-y-1">
+                        <h4 className="text-xs font-bold uppercase text-gray-700 flex items-center justify-end">
+                          GAME STATS <span className="ml-1">•</span>
+                        </h4>
+                        <div className="space-y-1 text-xs mt-1">
                           <div className="flex justify-between">
-                            <span>Total Games:</span>
+                            <span className="text-gray-600">Total Games:</span>
                             <span className="font-bold">{multiplicationStats?.stats?.overall?.totalGames ?? 0}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Perfect Games:</span>
+                            <span className="text-gray-600">Perfect Games:</span>
                             <span className="font-bold">{multiplicationStats?.stats?.overall?.perfectGames ?? 0}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Best Score:</span>
+                            <span className="text-gray-600">Best Score:</span>
                             <span className="font-bold">{multiplicationStats?.stats?.overall?.bestScore ?? 0}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Best Time:</span>
+                            <span className="text-gray-600">Best Time:</span>
                             <span className="font-bold">
                               {multiplicationStats?.stats?.overall?.bestTime 
                                 ? `${Math.floor(multiplicationStats.stats.overall.bestTime / 60)}:${(multiplicationStats.stats.overall.bestTime % 60).toString().padStart(2, '0')}`
@@ -457,31 +462,31 @@ const UserCards: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Awards section */}
-                  <div className="mt-8">
-                    <h3 className="text-2xl font-bold text-center uppercase mb-6">AWARDS</h3>
-                    <div className="grid grid-cols-3 gap-4">
+                  {/* Awards section with improved visuals */}
+                  <div className="mt-4 pt-3 border-t border-gray-200">
+                    <h3 className="text-xs font-bold text-center uppercase tracking-wider mb-2 text-gray-700">ACHIEVEMENTS</h3>
+                    <div className="grid grid-cols-3 gap-3">
                       {userBadges.slice(0, 3).map((badge) => (
                         <div key={badge.id} className="flex flex-col items-center">
-                          <div className="w-full aspect-square bg-purple-600 rounded-lg mb-2"></div>
-                          <span className="text-center text-sm font-bold uppercase">{badge.id}</span>
+                          <div className="w-full aspect-square bg-gradient-to-br from-purple-500 to-indigo-600 rounded-md mb-1"></div>
+                          <span className="text-center text-xs font-medium uppercase">{badge.id}</span>
                         </div>
                       ))}
                       {/* Fill with placeholders if less than 3 badges */}
                       {Array.from({ length: Math.max(0, 3 - userBadges.length) }).map((_, index) => (
                         <div key={`placeholder-${index}`} className="flex flex-col items-center">
-                          <div className="w-full aspect-square bg-purple-200 rounded-lg mb-2"></div>
-                          <span className="text-center text-sm font-bold uppercase text-gray-400">AWARD NAME</span>
+                          <div className="w-full aspect-square bg-gradient-to-br from-gray-200 to-gray-300 rounded-md mb-1"></div>
+                          <span className="text-center text-xs font-medium uppercase text-gray-400">LOCKED</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   
-                  {/* Button for detailed stats */}
-                  <div className="mt-8 flex flex-col space-y-2">
+                  {/* Button for detailed stats with improved design */}
+                  <div className="mt-4 flex flex-col space-y-2">
                     <button
                       onClick={handleCardFlip}
-                      className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      className="w-full py-1.5 px-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-md hover:from-blue-600 hover:to-indigo-700 transition text-xs font-medium"
                     >
                       View Detailed Stats
                     </button>
@@ -497,53 +502,73 @@ const UserCards: React.FC = () => {
                     <div className="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
                       <button
                         onClick={() => setStatsTab('multiplication')}
-                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                        className={`flex-1 py-2 px-3 text-lg font-bold rounded-md transition-colors ${
                           statsTab === 'multiplication' 
-                            ? 'bg-blue-600 text-white' 
-                            : 'text-gray-700 hover:bg-gray-200'
+                            ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-md' 
+                            : 'bg-white text-purple-600 hover:bg-gray-200 border border-purple-200'
                         }`}
                       >
-                        ×
+                        <span className="text-2xl">×</span>
                       </button>
                       <button
                         onClick={() => setStatsTab('addition')}
-                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                        className={`flex-1 py-2 px-3 text-lg font-bold rounded-md transition-colors ${
                           statsTab === 'addition' 
-                            ? 'bg-blue-600 text-white' 
-                            : 'text-gray-700 hover:bg-gray-200'
+                            ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-md' 
+                            : 'bg-white text-green-600 hover:bg-gray-200 border border-green-200'
                         }`}
                       >
-                        +
+                        <span className="text-2xl">+</span>
                       </button>
                       <button
                         onClick={() => setStatsTab('subtraction')}
-                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                        className={`flex-1 py-2 px-3 text-lg font-bold rounded-md transition-colors ${
                           statsTab === 'subtraction' 
-                            ? 'bg-blue-600 text-white' 
-                            : 'text-gray-700 hover:bg-gray-200'
+                            ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-md' 
+                            : 'bg-white text-red-600 hover:bg-gray-200 border border-red-200'
                         }`}
                       >
-                        −
+                        <span className="text-2xl">−</span>
                       </button>
                       <button
                         onClick={() => setStatsTab('division')}
-                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                        className={`flex-1 py-2 px-3 text-lg font-bold rounded-md transition-colors ${
                           statsTab === 'division' 
-                            ? 'bg-blue-600 text-white' 
-                            : 'text-gray-700 hover:bg-gray-200'
+                            ? 'bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-md' 
+                            : 'bg-white text-yellow-600 hover:bg-gray-200 border border-yellow-200'
                         }`}
                       >
-                        ÷
+                        <span className="text-2xl">÷</span>
                       </button>
                     </div>
                     
                     {/* Game type specific stats */}
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <h4 className="font-medium text-indigo-700 mb-3">
-                        {statsTab === 'multiplication' && 'Multiplication'}
-                        {statsTab === 'addition' && 'Addition'}
-                        {statsTab === 'subtraction' && 'Subtraction'}
-                        {statsTab === 'division' && 'Division'}
+                      <h4 className="font-bold text-lg mb-3 flex items-center">
+                        {statsTab === 'multiplication' && (
+                          <>
+                            <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 text-xl font-bold flex items-center justify-center mr-2">×</span>
+                            <span className="text-purple-700">Multiplication</span>
+                          </>
+                        )}
+                        {statsTab === 'addition' && (
+                          <>
+                            <span className="w-8 h-8 rounded-full bg-green-100 text-green-600 text-xl font-bold flex items-center justify-center mr-2">+</span>
+                            <span className="text-green-700">Addition</span>
+                          </>
+                        )}
+                        {statsTab === 'subtraction' && (
+                          <>
+                            <span className="w-8 h-8 rounded-full bg-red-100 text-red-600 text-xl font-bold flex items-center justify-center mr-2">−</span>
+                            <span className="text-red-700">Subtraction</span>
+                          </>
+                        )}
+                        {statsTab === 'division' && (
+                          <>
+                            <span className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 text-xl font-bold flex items-center justify-center mr-2">÷</span>
+                            <span className="text-yellow-700">Division</span>
+                          </>
+                        )}
                       </h4>
                       
                       {/* Multiplication Stats */}
@@ -722,10 +747,14 @@ const UserCards: React.FC = () => {
                     <img
                       src={selectedAvatar?.imageUrl || user.avatarUrl || user.photoURL}
                       alt={`${user.firstName}'s avatar`}
-                      className="w-24 h-24 rounded-full border-2 border-purple-200 object-cover mb-4"
+                      className="w-24 h-24 object-cover rounded-lg shadow-md"
+                      onError={(e) => {
+                        // Fallback if image fails to load
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=random&size=200`;
+                      }}
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-4">
+                    <div className="w-24 h-24 bg-purple-100 flex items-center justify-center rounded-lg shadow-md">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c1.474 0 2.946.644 4.204 1.732M12 10h.01M15.495 14.305A7.035 7.035 0 006 13c-1.1 0-2 .9-2 2a7.002 7.002 0 014 13 9 9 0 01-18 0z" />
                       </svg>
@@ -751,7 +780,7 @@ const UserCards: React.FC = () => {
                   <AvatarSelector 
                     selectedAvatarId={selectedAvatar?.id || null}
                     onSelectAvatar={handleSelectAvatar} 
-                    showOnlyDefaults={true}
+                    showOnlyDefaults={false}
                     className="mb-4"
                   />
                   
