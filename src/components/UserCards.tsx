@@ -386,82 +386,109 @@ const UserCards: React.FC = () => {
               </div>
               
               {!isFlipped ? (
-                // Front of card (Profile)
+                // Front of card - Profile view based on the image
                 <div className="p-6">
-                  <div className="flex flex-col items-center mb-6">
-                    {/* User avatar with direct image tag and fallback */}
-                    {user.photoURL || user.avatarUrl ? (
-                      <img
-                        src={user.photoURL || user.avatarUrl}
-                        alt={`${user.firstName}'s avatar`}
-                        className="w-24 h-24 rounded-full border-2 border-blue-200 object-cover mb-4"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c1.474 0 2.946.644 4.204 1.732M12 10h.01M15.495 14.305A7.035 7.035 0 006 13c-1.1 0-2 .9-2 2a7.002 7.002 0 014 13 9 9 0 01-18 0z" />
-                        </svg>
+                  {/* New layout based on the image */}
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Left side - Avatar */}
+                    <div className="flex-shrink-0 flex justify-center">
+                      {user.photoURL ? (
+                        <img 
+                          src={user.photoURL} 
+                          alt={`${user.firstName}'s profile`} 
+                          className="w-48 h-48 object-cover rounded-lg shadow-md"
+                          onError={(e) => {
+                            // Fallback if image fails to load
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=random&size=200`;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-48 h-48 rounded-lg bg-blue-100 flex items-center justify-center shadow-md">
+                          <User className="w-24 h-24 text-blue-600" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Right side - User info and stats */}
+                    <div className="flex-grow flex flex-col">
+                      {/* User name */}
+                      <div className="mb-4">
+                        <h3 className="text-2xl font-bold uppercase">
+                          {user.displayName || `${user.firstName} ${user.lastName}`}
+                        </h3>
+                        <p className="text-gray-600 uppercase text-sm">USER NAME</p>
                       </div>
-                    )}
-                    <h3 className="text-lg font-medium text-gray-800">
-                      {user.firstName} {user.lastName}
-                    </h3>
-                    <p className="text-gray-600">{user.email}</p>
-                  </div>
-                  
-                  {/* User profile information */}
-                  <div className="mt-4 mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <h4 className="font-medium text-blue-800 mb-2">Account Information</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Name:</span>
-                        <span className="font-medium">{user.firstName} {user.lastName}</span>
+                      
+                      {/* Coin balance */}
+                      <div className="mb-6">
+                        <h4 className="text-xl font-bold">COIN BALANCE</h4>
+                        <div className="flex items-center">
+                          <div className="w-6 h-6 rounded-full bg-yellow-400 mr-2"></div>
+                          <span className="text-xl font-bold">{user.coins || 0}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Coins Balance:</span>
-                        <span className="font-medium">{user.coins || 0}</span>
+                      
+                      {/* Game statistics */}
+                      <div>
+                        <h4 className="text-xl font-bold mb-2">Game Statistics</h4>
+                        <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <span>Total Games:</span>
+                            <span className="font-bold">{multiplicationStats?.stats?.overall?.totalGames ?? 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Perfect Games:</span>
+                            <span className="font-bold">{multiplicationStats?.stats?.overall?.perfectGames ?? 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Best Score:</span>
+                            <span className="font-bold">{multiplicationStats?.stats?.overall?.bestScore ?? 0}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Best Time:</span>
+                            <span className="font-bold">
+                              {multiplicationStats?.stats?.overall?.bestTime 
+                                ? `${Math.floor(multiplicationStats.stats.overall.bestTime / 60)}:${(multiplicationStats.stats.overall.bestTime % 60).toString().padStart(2, '0')}`
+                                : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Game statistics */}
-                  <div className="mt-4 mb-6 bg-indigo-50 p-4 rounded-lg border border-indigo-100">
-                    <h4 className="font-medium text-indigo-800 mb-2">Game Statistics</h4>
-                    {multiplicationStatsLoading ? (
-                      <p className="text-gray-500 text-sm">Loading stats...</p>
-                    ) : (
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Total Games:</span>
-                          <span className="font-medium">{multiplicationStats?.stats.overall.totalGames || 0}</span>
+                  {/* Awards section */}
+                  <div className="mt-8">
+                    <h3 className="text-2xl font-bold text-center uppercase mb-6">AWARDS</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      {userBadges.slice(0, 3).map((badge) => (
+                        <div key={badge.id} className="flex flex-col items-center">
+                          <div className="w-full aspect-square bg-purple-600 rounded-lg mb-2"></div>
+                          <span className="text-center text-sm font-bold uppercase">{badge.id}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Perfect Games:</span>
-                          <span className="font-medium">{multiplicationStats?.stats.overall.perfectGames || 0}</span>
+                      ))}
+                      {/* Fill with placeholders if less than 3 badges */}
+                      {Array.from({ length: Math.max(0, 3 - userBadges.length) }).map((_, index) => (
+                        <div key={`placeholder-${index}`} className="flex flex-col items-center">
+                          <div className="w-full aspect-square bg-purple-200 rounded-lg mb-2"></div>
+                          <span className="text-center text-sm font-bold uppercase text-gray-400">AWARD NAME</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Best Score:</span>
-                          <span className="font-medium">{multiplicationStats?.stats.overall.bestScore || 0}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Best Time:</span>
-                          <span className="font-medium">{formatTime(multiplicationStats?.stats.overall.bestTime || null)}</span>
-                        </div>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
                   
-                  <div className="mt-6 text-center">
-                    <button 
+                  {/* Button for detailed stats */}
+                  <div className="mt-8 flex flex-col space-y-2">
+                    <button
                       onClick={handleCardFlip}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     >
-                      View Stats
+                      View Detailed Stats
                     </button>
                   </div>
                 </div>
               ) : (
-                // Back of card (Profile Stats)
+                // Back of card (Detailed Stats)
                 <div className="p-6">
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Detailed Statistics</h3>
@@ -654,30 +681,6 @@ const UserCards: React.FC = () => {
                           </div>
                         )
                       )}
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-700">Coins:</span>
-                      <span className="text-blue-600 font-bold">{user.coins || 0}</span>
-                    </div>
-                    
-                    {/* Additional stats */}
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h4 className="font-medium text-gray-700 mb-2">Game Progress</h4>
-                      <div className="bg-blue-100 rounded-lg p-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">Game Completion:</span>
-                          <span className="text-sm font-medium">
-                            {multiplicationStats?.stats?.overall?.totalGames ?? 0} games
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${Math.min(((multiplicationStats?.stats?.overall?.totalGames ?? 0) / 100) * 100, 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                   
