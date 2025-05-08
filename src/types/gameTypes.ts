@@ -6,10 +6,11 @@ export interface UserGameStats {
   gameType: GameType;
   score: number;
   totalQuestions: number;
-  // Renamed from timeSpent to timeTaken to match our implementation
+  // Keep both timeSpent and timeTaken for backward compatibility
   timeTaken: number;
+  timeSpent: number; // Added to match usage in Game component
   // Made history optional since we don't always need it
-  history?: string[];
+  history: string[]; // Made required to match usage in Game component
   difficulty: GameDifficulty;
   // Added date field for when the game was played
   date: Date;

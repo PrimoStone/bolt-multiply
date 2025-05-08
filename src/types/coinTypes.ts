@@ -14,7 +14,9 @@ export type TransactionType =
   | 'STREAK_BONUS' 
   | 'PERFECT_GAME' 
   | 'PURCHASE'
-  | 'CORRECT_ANSWER';
+  | 'CORRECT_ANSWER'
+  | 'GAME_COMPLETION'
+  | 'HIGH_ACCURACY';
 
 export interface DailyBonus {
   lastClaimDate: string; // ISO date string
@@ -30,7 +32,9 @@ export interface DailyBonus {
 export const COIN_REWARDS = {
   CORRECT_ANSWER: 1,
   STREAK_BONUS: 10, // 10 coins for 10 correct answers in a row
-  PERFECT_GAME: 20
+  PERFECT_GAME: 20,
+  GAME_COMPLETION: 15, // Coins for completing a game session
+  HIGH_ACCURACY: 5    // Bonus for achieving high accuracy (e.g., >= 90%)
 } as const;
 
 export const DAILY_BONUS_RULES = {

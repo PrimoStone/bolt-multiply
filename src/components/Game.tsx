@@ -1,95 +1,44 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
-import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
+import { useRewards } from '../contexts/RewardContext';
+import { PlayIcon } from 'lucide-react';
 import { saveGameStats } from '../firebase/utils';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
-import { convertToBase64 } from '../firebase/utils';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useUserStats } from '../hooks/useUserStats';
-import StatsModal from '../components/StatsModal'; // Import StatsModal component
-import { gameStyles, gameColors } from '../styles/gameStyles';
-import CoinAnimation from '../components/CoinAnimation'; // Import CoinAnimation component
+import CoinAnimation from '../components/CoinAnimation'; 
 import { COIN_REWARDS } from '../types/coinTypes';
-import { RewardProvider } from '../contexts/RewardContext';
 import RewardNotification from './rewards/RewardNotification';
-import { UserGameStats } from '../types/gameTypes';
+import { UserGameStats, GameType as UserGameStatsGameType } from '../types/gameTypes';
 import { RewardNotification as RewardNotificationType } from '../types/rewardTypes';
-import { TransactionType } from '../contexts/UserContext';
 
 const TOTAL_QUESTIONS = 20;
 
-interface GameProps {
-  // twoje istniejące props
-}
-
-const getInitials = (firstName: string = '', lastName: string = '') => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-};
-
 const Game: React.FC = () => {
-  const { user, setUser, updateCoins } = useUser();
-  const navigate = useNavigate();
+  const { user, updateCoins } = useUser();
+  const { checkGameAchievements: contextCheckGameAchievements, notifications: contextNotifications, refreshRewards: refreshRewardsContext } = useRewards();
   const [num1, setNum1] = useState(0);
   const [num2, setNum2] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
   const [score, setScore] = useState(0);
   const [questionsAnswered, setQuestionsAnswered] = useState(0);
   const [gameHistory, setGameHistory] = useState<string[]>([]);
-  const [startTime, setStartTime] = useState<Date>(new Date());
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [selectedNumber, setSelectedNumber] = useState<number | undefined>(undefined);
   const [time, setTime] = useState(0);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { stats: userStats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'multiplication');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showStats, setShowStats] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [selectedNumber, setSelectedNumber] = useState<number | undefined>();
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
-  const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
+  const { refreshStats } = useUserStats(user?.id || '', 'multiplication');
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [earnedCoins, setEarnedCoins] = useState(0);
   const [coinAnimationType, setCoinAnimationType] = useState<'correct' | 'streak' | 'perfect'>('correct');
   const [currentStreak, setCurrentStreak] = useState(0);
-  
-  // Reward notification state
-  const [rewardNotifications, setRewardNotifications] = useState<RewardNotificationType[]>([]);
+  const [isProcessingAnswer, setIsProcessingAnswer] = useState(false); 
   const [currentNotification, setCurrentNotification] = useState<RewardNotificationType | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [usedNumbers, setUsedNumbers] = useState<string[]>([]); 
+  const [showResults, setShowResults] = useState(false); 
 
   useEffect(() => {
-    console.log('User data:', {
-      fullUser: user,
-      photoURL: user?.photoURL || null,
-      firstName: user?.firstName,
-      lastName: user?.lastName
-    });
-  }, []);
-
-  console.log('User photo data:', {
-    hasPhoto: !!user?.photoURL,
-    photoURL: user?.photoURL,
-    photoURLType: typeof user?.photoURL,
-    photoURLLength: user?.photoURL?.length
-  });
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/');
-    } else {
-      generateQuestion();
-      setStartTime(new Date());
-    }
-  }, [user, navigate]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [num1, num2]);
-
-  useEffect(() => {
-    if (isGameStarted) {
+    if (isGameStarted && !showResults) {
       timerRef.current = setInterval(() => {
         setTime(prev => prev + 1);
       }, 1000);
@@ -102,32 +51,10 @@ const Game: React.FC = () => {
     };
   }, [isGameStarted]);
 
-  useEffect(() => {
-    console.log('Current user stats:', userStats);
-  }, [userStats]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowStats(false);
-      }
-    };
-
-    if (showStats) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showStats]);
-
   const generateQuestion = () => {
-    // If a number is selected, use it as one of the factors
     let newNum1: number;
     let newNum2: number;
 
-    // Get max range based on difficulty
     let maxRange;
     switch (difficulty) {
       case 'easy':
@@ -143,29 +70,23 @@ const Game: React.FC = () => {
         maxRange = 10;
     }
 
-    // Keep track of available numbers that haven't been used yet
     let availableNumbers = Array.from({ length: maxRange }, (_, i) => i + 1)
-      .filter(num => !usedNumbers.includes(num));
+      .filter(num => !usedNumbers.includes(num.toString()));
 
-    // If all numbers have been used, reset the usedNumbers array
     if (availableNumbers.length === 0) {
       setUsedNumbers([]);
       availableNumbers = Array.from({ length: maxRange }, (_, i) => i + 1);
     }
 
-    // Select a random number from available numbers
     const randomIndex = Math.floor(Math.random() * availableNumbers.length);
     const randomNumber = availableNumbers[randomIndex];
 
-    // Add the number to used numbers
-    setUsedNumbers(prev => [...prev, randomNumber]);
+    setUsedNumbers((prev: string[]) => [...prev, randomNumber.toString()]);
 
     if (selectedNumber) {
-      // If a number is selected, use it as num1 and generate random num2
       newNum1 = selectedNumber;
       newNum2 = randomNumber;
     } else {
-      // If no number is selected, generate both numbers randomly
       newNum1 = Math.floor(Math.random() * 9) + 1;
       newNum2 = randomNumber;
     }
@@ -175,200 +96,123 @@ const Game: React.FC = () => {
     setUserAnswer('');
   };
 
-  // Function to check for achievements after game completion
-  const checkGameAchievements = async () => {
-    // Calculate accuracy
-    const accuracy = Math.round((score / TOTAL_QUESTIONS) * 100);
-    
-    // Calculate time taken in seconds
-    const endTime = new Date();
-    const timeTaken = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
-    
-    // Calculate coins earned based on score and difficulty
-    const baseCoins = COIN_REWARDS.PERFECT_GAME;
-    const difficultyMultiplier = 
-      difficulty === 'easy' ? 1 :
-      difficulty === 'medium' ? 1.5 : 2;
-    
-    const totalCoins = Math.round(baseCoins * difficultyMultiplier);
-    
-    // Show coin animation
-    setEarnedCoins(totalCoins);
-    setShowCoinAnimation(true);
-    
-    // Update user's coins
-    if (user) {
-      updateCoins(totalCoins, 'REWARD', `Perfect game bonus: ${score}/${TOTAL_QUESTIONS} correct`);
-    }
-    
-    // Save game stats
-    if (user) {
-      const gameStats: UserGameStats = {
-        gameType: 'multiplication',
-        score,
-        totalQuestions: TOTAL_QUESTIONS,
-        accuracy,
-        timeTaken,
-        difficulty,
-        date: new Date(),
-        targetNumber: selectedNumber
-      };
-      
-      await saveGameStats(gameStats);
-      
-      // Refresh stats after game completion
-      refreshStats();
-      
-      // Check for achievements with the reward system
-      try {
-        // Get the RewardContext from the parent component
-        const rewardContext = document.getElementById('reward-context-value');
-        if (rewardContext && rewardContext.dataset.checkAchievements === 'true') {
-          // This is a placeholder for the actual implementation
-          // In a real implementation, you would use the useRewards hook from the RewardContext
-          // But since we're wrapping the component with RewardProvider, we'll handle this differently
-          
-          // For now, we'll just show a notification if the score is perfect
-          if (score === TOTAL_QUESTIONS) {
-            const perfectGameNotification: RewardNotificationType = {
-              id: `perfect-game-${Date.now()}`,
-              type: 'badge',
-              itemId: 'perfect-game-badge',
-              name: 'Perfect Game',
-              description: 'You answered all questions correctly!',
-              imageUrl: '/badges/perfect-game.png',
-              earnedAt: new Date(),
-              seen: false
-            };
-            
-            setRewardNotifications([perfectGameNotification]);
-            setCurrentNotification(perfectGameNotification);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking achievements:', error);
-      }
-    }
-  };
-
-  // Handle notification close
-  const handleNotificationClose = () => {
-    if (currentNotification) {
-      // Mark notification as seen
-      if (currentNotification) {
-        const updatedNotification = { ...currentNotification, seen: true };
-        // In a real implementation, you would update this in the database
-        console.log('Marking notification as seen:', updatedNotification);
-      }
-      
-      // Remove from current notifications array
-      setRewardNotifications(prev => prev.filter(n => n.id !== currentNotification.id));
-      
-      // Show the next notification if available
-      const nextNotifications = rewardNotifications.filter(n => n.id !== currentNotification.id);
-      if (nextNotifications.length > 0) {
-        setCurrentNotification(nextNotifications[0]);
-      } else {
-        setCurrentNotification(null);
-      }
-    }
-  };
-
-  // Handle game completion
-  const handleGameEnd = async () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    
-    // Check for achievements and show rewards
-    await checkGameAchievements();
-    
-    // Wait a moment before resetting the game
-    setTimeout(() => {
-      setIsGameStarted(false);
-      setScore(0);
-      setQuestionsAnswered(0);
-      setGameHistory([]);
-      setTime(0);
-      setCurrentStreak(0);
-    }, 2000);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const answer = parseInt(userAnswer);
+    if (isProcessingAnswer) return;
+    setIsProcessingAnswer(true);
+
     const correctAnswer = num1 * num2;
-    
-    if (answer === correctAnswer) {
-      // Correct answer
-      setScore(score + 1);
-      setCurrentStreak(currentStreak + 1);
+    const userAnswerNum = parseInt(userAnswer);
+
+    if (userAnswerNum === correctAnswer) {
+      setScore(prev => prev + 1);
+      setGameHistory(prev => [...prev, `Question: ${num1} × ${num2} = ${userAnswerNum} (Correct)`]);
+      setCurrentStreak(prev => prev + 1);
       
-      // Add to game history
-      setGameHistory([...gameHistory, `Correct: ${num1} × ${num2} = ${correctAnswer}`]);
-      
-      // Show coin animation for correct answer
+      // Handle correct answer coins
       setEarnedCoins(COIN_REWARDS.CORRECT_ANSWER);
       setCoinAnimationType('correct');
       setShowCoinAnimation(true);
       
-      // Update user coins
-      if (user) {
-        updateCoins(COIN_REWARDS.CORRECT_ANSWER, 'REWARD', `Correct answer: ${num1} × ${num2} = ${correctAnswer}`);
+      if (user && updateCoins) {
+        await updateCoins(COIN_REWARDS.CORRECT_ANSWER, 'REWARD', `Correct answer: ${num1} × ${num2} = ${correctAnswer}`);
       }
       
-      // Check for streak bonus
-      if ((currentStreak + 1) % 5 === 0) {
-        // Award streak bonus
-        setTimeout(() => {
-          setEarnedCoins(COIN_REWARDS.STREAK_BONUS);
-          setCoinAnimationType('streak');
-          setShowCoinAnimation(true);
-          
-          // Update user coins
-          if (user) {
-            updateCoins(COIN_REWARDS.STREAK_BONUS, 'REWARD', `Streak bonus: ${currentStreak + 1} correct answers in a row`);
-          }
-        }, 1000);
+      // Check for streak bonus - but don't show animation yet
+      // We'll handle this in the onComplete callback of the first animation
+      const hasStreakBonus = (currentStreak + 1) % 5 === 0;
+      if (hasStreakBonus && user && updateCoins) {
+        // Still award the coins in the database
+        await updateCoins(COIN_REWARDS.STREAK_BONUS, 'REWARD', `Streak bonus: ${currentStreak + 1} correct answers in a row`);
       }
     } else {
-      // Incorrect answer
-      setGameHistory([...gameHistory, `Incorrect: ${num1} × ${num2} = ${correctAnswer}, you answered ${answer}`]);
+      setGameHistory(prev => [...prev, `Question: ${num1} × ${num2} = ${userAnswerNum} (Incorrect, Correct: ${correctAnswer})`]);
       setCurrentStreak(0);
     }
-    
-    // Clear input
+
     setUserAnswer('');
-    
-    // Move to next question or end game
-    setQuestionsAnswered(questionsAnswered + 1);
+    setQuestionsAnswered(prev => prev + 1);
+
     if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
-      // Game completed
-      handleGameEnd();
+      await handleGameCompletion();
     } else {
-      // Generate next question
       generateQuestion();
     }
-    
-    // Focus on input
-    inputRef.current?.focus();
+    setIsProcessingAnswer(false); 
   };
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleGameCompletion = async () => {
+    setIsGameStarted(false);
+    setShowResults(true);
+
+    const accuracy = (score / TOTAL_QUESTIONS) * 100;
+    let totalCoinsEarned = 0;
+
+    if (accuracy >= 90) {
+      totalCoinsEarned += COIN_REWARDS.HIGH_ACCURACY;
+    }
+    totalCoinsEarned += COIN_REWARDS.GAME_COMPLETION;
+
+    if (user && updateCoins) {
+      await updateCoins(totalCoinsEarned, 'REWARD', 'Coins earned for completing the game'); 
+    }
+
+    const gameStats: UserGameStats = {
+      gameType: 'multiplication' as UserGameStatsGameType,
+      score,
+      totalQuestions: TOTAL_QUESTIONS,
+      accuracy,
+      timeTaken: time, 
+      timeSpent: time, 
+      difficulty: difficulty,
+      date: new Date(),
+      targetNumber: selectedNumber,
+      history: gameHistory, 
+    };
+
+    if (user) { 
+      await saveGameStats(user.id, gameStats); 
+      refreshStats(); 
+
+      try {
+        if (contextCheckGameAchievements) {
+          await contextCheckGameAchievements(gameStats); 
+          refreshRewardsContext(); 
+
+          const unseenNotifications = contextNotifications?.filter(n => !n.seen);
+          if (unseenNotifications && unseenNotifications.length > 0) {
+            setCurrentNotification(unseenNotifications[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking achievements or refreshing rewards:", err);
+      }
+    }
+  };
+
+  const handleNotificationClose = () => {
+    if (currentNotification && contextNotifications) {
+      // Add a small delay before removing the notification to allow for animation
+      setTimeout(() => {
+        setCurrentNotification(null);
+        
+        // Update the context to mark notification as seen
+        if (refreshRewardsContext) {
+          refreshRewardsContext();
+        }
+      }, 300); // Short delay for animation to complete
+    }
   };
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const startGame = () => {
     setIsGameStarted(true);
-    setStartTime(new Date());
-    setUsedNumbers([]); // Reset used numbers when starting new game
+    setUsedNumbers([]); 
     generateQuestion();
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -378,328 +222,201 @@ const Game: React.FC = () => {
     }, 1000);
   };
 
-  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user?.id) return;
-
-    try {
-      // Kompresja i konwersja do base64
-      const base64String = await convertToBase64(file);
-      
-      // Aktualizacja w Firebase
-      const userDocRef = doc(db, 'users', user.id);
-      await updateDoc(userDocRef, {
-        photoURL: base64String
-      });
-
-      // Aktualizacja w UserContext
-      setUser({
-        ...user,
-        photoURL: base64String
-      });
-
-    } catch (error) {
-      console.error('Błąd podczas aktualizacji zdjęcia:', error);
-      alert('Nie udało się zaktualizować zdjęcia profilowego');
-    }
+  const resetGame = () => {
+    setShowResults(false);
+    setScore(0);
+    setQuestionsAnswered(0);
+    setGameHistory([]);
+    setCurrentStreak(0);
+    setTime(0);
+    setIsGameStarted(false);
+    setUsedNumbers([]); 
+    startGame();
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleGameCompletion = async () => {
-    // Calculate accuracy
-    const accuracy = Math.round((score / TOTAL_QUESTIONS) * 100);
-    
-    // Calculate time taken in seconds
-    const endTime = new Date();
-    const timeTaken = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
-    
-    // Calculate coins earned based on score, accuracy, and difficulty
-    const baseCoins = COIN_REWARDS.GAME_COMPLETION;
-    const accuracyBonus = accuracy >= 90 ? COIN_REWARDS.HIGH_ACCURACY : 0;
-    const difficultyMultiplier = 
-      difficulty === 'easy' ? 1 :
-      difficulty === 'medium' ? 1.5 : 2;
-    
-    const totalCoins = Math.round((baseCoins + accuracyBonus) * difficultyMultiplier);
-    
-    // Show coin animation
-    setEarnedCoins(totalCoins);
-    setShowCoinAnimation(true);
-    
-    // Update user's coins
-    if (user) {
-      updateCoins(totalCoins, 'REWARD', `Game completion bonus: ${score}/${TOTAL_QUESTIONS} correct`);
-    }
-    
-    // Save game stats
-    if (user) {
-      const gameStats: UserGameStats = {
-        userId: user.id,
-        gameType: 'multiplication',
-        score,
-        totalQuestions: TOTAL_QUESTIONS,
-        accuracy,
-        timeTaken,
-        difficulty,
-        date: new Date(),
-        targetNumber: selectedNumber
-      };
-      
-      await saveGameStats(gameStats);
-      
-      // Check for achievements with the reward system
-      if (window.rewardsContextValue) {
-        const { checkGameAchievements, checkForPendingNotifications } = window.rewardsContextValue;
-        
-        // Check for achievements based on game stats
-        const achievementResult = await checkGameAchievements(gameStats);
-        
-        // If achievements were earned, get notifications
-        if (achievementResult.achievementsEarned) {
-          const notifications = await checkForPendingNotifications();
-          setRewardNotifications(notifications);
-          
-          // Show the first notification if available
-          if (notifications.length > 0) {
-            setCurrentNotification(notifications[0]);
-          }
-        }
-      }
-      
-      // Refresh stats after game completion
-      refreshStats();
-    }
-  };
+  const currentBgColor = 'bg-gray-100';
+  const currentTextColor = 'text-gray-800';
 
   return (
-    <RewardProvider>
-      <div id="reward-context-value" data-check-achievements="true" className="hidden"></div>
-      <div className={`${gameStyles.container} ${gameColors.multiplication.background}`}>
-        {/* Coin animation */}
-        {showCoinAnimation && (
-          <CoinAnimation 
-            amount={earnedCoins}
-            type={coinAnimationType}
-            onComplete={() => {
-              console.log("Animation complete, hiding animation");
+    <div className={`min-h-screen flex flex-col ${currentBgColor} ${currentTextColor}`}> 
+      {/* Coin animation */}
+      {showCoinAnimation && (
+        <CoinAnimation 
+          amount={earnedCoins} 
+          type={coinAnimationType}
+          onComplete={() => {
+            // Check if this was a correct answer and if we have a streak bonus to show
+            const hasStreakBonus = coinAnimationType === 'correct' && currentStreak % 5 === 0 && currentStreak > 0;
+            
+            if (hasStreakBonus) {
+              // Show streak bonus animation
+              setEarnedCoins(COIN_REWARDS.STREAK_BONUS);
+              setCoinAnimationType('streak');
+              // The animation will continue showing
+            } else {
+              // No streak bonus, just hide the animation
               setShowCoinAnimation(false);
-            }}
-          />
-        )}
-        
-        <div className={gameStyles.innerContainer}>
-          {/* Main game content - reduced top spacing for better mobile experience */}
-          <div className={`${gameStyles.contentWrapper} mt-0`}>
-            <div className={gameStyles.gameCard}>
-              <div className={`${gameStyles.gameCardGradient} ${gameColors.multiplication.gradient}`}></div>
-              <div className={gameStyles.gameCardInner}>
-                {/* Fixed header - sticky position to ensure it's always visible */}
-                <div className="sticky top-0 z-10 backdrop-blur-md rounded-t-lg -mt-10 -mx-4 sm:-mx-8 px-4 sm:px-8 pt-4 pb-2 mb-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => navigate('/gameselect')}
-                      className={`${gameStyles.backButton} ${gameColors.multiplication.button} text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2`}
-                    >
-                      <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                      <span>Back</span>
-                    </button>
-                    
-                    <img 
-                      src="/multiplication.png" 
-                      alt="Multiplication" 
-                      className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
-                    />
-                  </div>
-                </div>
-                <div className="max-w-md mx-auto">
-                  {/* Game content starts here - removed the old navigation */}
-                  {!isGameStarted ? (
-                    <div className="divide-y divide-gray-200">
-                      <div className="py-4 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                        <div className={gameStyles.gameContent.wrapper}>
-                          {/* Removed duplicate game logo from here since we added it at the top */}
-                          {/* <h1 className={gameStyles.gameContent.startScreen.title}>Multiplication Challenge</h1> */}
-
-                          {/* Number Selection */}
-                          <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
-                              Select a Number (Optional)
-                            </label>
-                            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3 max-w-[320px] mx-auto">
-                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
-                                <div key={num} className="flex items-center justify-center">
-                                  <button
-                                    onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
-                                    className={`
-                                      w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-base sm:text-lg font-semibold
-                                      transition-all duration-200 ease-in-out
-                                      ${selectedNumber === num 
-                                        ? 'bg-blue-500 text-white shadow-lg scale-110' 
-                                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-500 hover:text-blue-500'}
-                                    `}
-                                  >
-                                    {num}
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="mt-2 text-center">
-                              {selectedNumber === undefined ? (
-                                <p className="text-sm text-gray-500">
-                                  No number selected - using random numbers
-                                </p>
-                              ) : (
-                                <p className="text-sm text-blue-600">
-                                  Practice multiplying by {selectedNumber}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Difficulty Selection */}
-                          <div className="mb-6">
-                            <label className="block text-gray-700 text-sm font-bold mb-2">
-                              Difficulty Level
-                            </label>
-                            <div className="flex gap-2">
-                              {['easy', 'medium', 'hard'].map((d) => (
-                                <button
-                                  key={d}
-                                  className={`flex-1 py-2 px-4 rounded-lg capitalize ${
-                                    difficulty === d
-                                      ? 'bg-blue-500 text-white'
-                                      : 'bg-gray-200 text-gray-700'
-                                  } hover:bg-blue-400 hover:text-white transition-colors`}
-                                  onClick={() => setDifficulty(d as 'easy' | 'medium' | 'hard')}
-                                >
-                                  {d}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={startGame}
-                            className="px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 flex items-center space-x-2 mx-auto text-sm sm:text-base bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur"
-                          >
-                            <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                            <span>Start Game</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-200">
-                      <div className="py-4 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                        <div className={gameStyles.gameContent.wrapper}>
-                          {/* Progress Bar */}
-                          <div className={gameStyles.gameContent.progressBar.wrapper}>
-                            <div 
-                              className={gameStyles.gameContent.progressBar.inner}
-                              style={{ 
-                                width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%`,
-                                background: 'linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red)',
-                                animation: 'shimmer 2s linear infinite'
-                              }}
-                            />
-                          </div>
-                          <style>
-                            {`
-                              @keyframes shimmer {
-                                0% { background-position: 200% center; }
-                                100% { background-position: -200% center; }
-                              }
-                            `}
-                          </style>
-
-                          <div className="flex justify-between mb-2 text-gray-600 font-medium text-xs sm:text-sm">
-                            <div>Score: {score}</div>
-                            <div>Time: {formatTime(time)}</div>
-                            <div>
-                              Question: {questionsAnswered + 1}/{TOTAL_QUESTIONS}
-                            </div>
-                          </div>
-
-                          {/* Removed duplicate game logo from here since we added it at the top */}
-
-                          <div className="text-3xl sm:text-4xl font-bold text-center mb-4 sm:mb-6 text-gray-700">
-                            {num1} × {num2} = ?
-                          </div>
-
-                          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-                            <input
-                              type="number"
-                              value={userAnswer}
-                              onChange={(e) => setUserAnswer(e.target.value)}
-                              className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200"
-                              placeholder="Your answer"
-                              ref={inputRef}
-                            />
-                            <button
-                              type="submit"
-                              className="w-full py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 bg-blue-600/70 hover:bg-blue-700/80 text-white backdrop-blur"
-                            >
-                              Submit Answer
-                            </button>
-                          </form>
-
-                          {/* Game History */}
-                          <div className="flex gap-1 mt-6 justify-center">
-                            {gameHistory.map((result, index) => (
-                              <div
-                                key={index}
-                                className={`w-3 h-3 rounded-full ${
-                                  result.includes('Correct') ? 'bg-green-500' : 'bg-red-500'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Mr. Primo logo at bottom */}
-          <div className={gameStyles.mrPrimoLogo.wrapper}>
-            <Link to="https://mrprimo.org" target="_blank" rel="noopener noreferrer" className="inline-block">
-              <img 
-                src="/MrPrimo-LOGO-sm.png" 
-                alt="Mr. Primo" 
-                className={gameStyles.mrPrimoLogo.image}
-              />
-            </Link>
-          </div>
-
-          {/* Stats Modal */}
-          {showStats && (
-            <StatsModal
-              isOpen={showStats}
-              onClose={() => setShowStats(false)}
-              stats={userStats}
-              loading={statsLoading}
-              error={statsError}
-              gameType="multiplication"
-            />
-          )}
-        </div>
-      </div>
-      
+            }
+          }}
+        />
+      )}
       {/* Reward notification */}
       {currentNotification && (
         <RewardNotification
           notification={currentNotification}
-          onClose={handleNotificationClose}
-          autoClose={false}
+          onClose={handleNotificationClose} 
+          autoClose={false} 
         />
       )}
-    </RewardProvider>
+      {/* Results Modal/Screen - Placeholder */} 
+      {showResults && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl text-center">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Game Over!</h2>
+            <p className="text-xl mb-2 text-gray-700">Your Score: {score}/{TOTAL_QUESTIONS}</p>
+            <p className="text-lg mb-2 text-gray-600">Accuracy: {((score / TOTAL_QUESTIONS) * 100).toFixed(0)}%</p>
+            <p className="text-lg mb-4 text-gray-600">Time: {formatTime(time)}</p>
+            <button 
+              onClick={() => {
+                resetGame();
+              }}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Play Again
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Main game content */}
+      {!isGameStarted ? (
+        <div className="flex-grow flex flex-col items-center justify-center p-4">
+          <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-lg text-gray-700">
+            <img 
+                src="/multiplication.png" 
+                alt="Multiplication Challenge Icon"
+                className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6"
+            />
+            <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-blue-600">Multiplication Challenge</h1>
+            
+            {/* Number Selection */}
+            <div className="mb-6">
+              <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
+                Practice a Specific Times Table (Optional)
+              </label>
+              <div className="grid grid-cols-4 gap-2 max-w-xs mx-auto">
+                {[...Array(12)].map((_, i) => i + 1).map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setSelectedNumber(selectedNumber === num ? undefined : num)}
+                    className={`py-2 px-3 rounded-lg text-sm font-semibold transition-all duration-200 ease-in-out transform hover:scale-105 
+                      ${selectedNumber === num 
+                        ? 'bg-blue-500 text-white shadow-md ring-2 ring-blue-300'
+                        : 'bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-600'}`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+              {selectedNumber !== undefined && (
+                <p className="text-center text-sm text-blue-600 mt-2">
+                  Practice Mode: Multiplying by {selectedNumber}
+                </p>
+              )}
+              {selectedNumber === undefined && (
+                 <p className="text-center text-sm text-gray-500 mt-2">
+                  Random Mode: All numbers will be used
+                </p>
+              )}
+            </div>
+
+            {/* Difficulty Selection */}
+            <div className="mb-8">
+              <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
+                Difficulty Level
+              </label>
+              <div className="flex justify-center gap-2 sm:gap-3">
+                {(['easy', 'medium', 'hard'] as Array<'easy' | 'medium' | 'hard'>).map((d) => (
+                  <button
+                    key={d}
+                    className={`py-2 px-4 sm:px-6 rounded-lg capitalize font-medium transition-colors duration-200 ease-in-out transform hover:scale-105
+                      ${difficulty === d 
+                        ? 'bg-green-500 text-white shadow-md ring-2 ring-green-300' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-600'}`}
+                    onClick={() => setDifficulty(d)}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={startGame}
+              className="w-full sm:w-auto mx-auto flex items-center justify-center gap-2 px-8 py-3 rounded-lg font-semibold shadow-lg transition-transform duration-200 ease-in-out bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+            >
+              <PlayIcon className="w-5 h-5" />
+              <span>Start Game</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-grow flex flex-col items-center justify-center p-4">
+          <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-md">
+            {/* Top Bar: Score, Time, Question Count */}
+            <div className="flex justify-between items-center mb-4 text-sm sm:text-base text-gray-600">
+              <div className="font-medium">Score: <span className="text-blue-600 font-bold">{score}</span></div>
+              <div className="font-medium">Time: <span className="text-green-600 font-bold">{formatTime(time)}</span></div>
+              <div className="font-medium">Q: <span className="text-purple-600 font-bold">{questionsAnswered + 1}/{TOTAL_QUESTIONS}</span></div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6 sm:mb-8">
+              <div 
+                className="bg-gradient-to-r from-blue-400 to-indigo-500 h-2.5 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${(questionsAnswered / TOTAL_QUESTIONS) * 100}%` }}
+              />
+            </div>
+
+            <div className="text-4xl sm:text-5xl font-bold text-center mb-6 sm:mb-8 text-gray-700">
+              {num1} <span className="text-blue-500">×</span> {num2} = ?
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="number"
+                value={userAnswer}
+                onChange={(e) => setUserAnswer(e.target.value)}
+                className="w-full px-4 py-3 text-lg rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all duration-200 ease-in-out text-center tabular-nums"
+                placeholder="Your Answer"
+                ref={inputRef}
+                disabled={isProcessingAnswer} 
+              />
+              <button
+                type="submit"
+                className={`w-full py-3 rounded-lg font-semibold shadow-lg transition-all duration-200 ease-in-out transform hover:scale-105 text-white
+                  ${isProcessingAnswer 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700'}`}
+                disabled={isProcessingAnswer} 
+              >
+                {isProcessingAnswer ? 'Checking...' : 'Submit Answer'}
+              </button>
+            </form>
+
+            {/* Game History Dots */}
+            <div className="flex gap-1.5 mt-6 justify-center h-3">
+              {gameHistory.map((result, index) => (
+                <div
+                  key={index}
+                  className={`w-2.5 h-2.5 rounded-full ${result.includes('Correct') ? 'bg-green-400' : 'bg-red-400'}`}
+                  title={result} // Show full result on hover
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

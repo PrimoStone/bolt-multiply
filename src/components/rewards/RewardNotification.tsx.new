@@ -102,13 +102,14 @@ const RewardNotification: React.FC<RewardNotificationProps> = ({
           textColor: 'text-gray-800',
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           )
         };
     }
   };
   
+  // Get the styles for the current notification
   const { backgroundColor, borderColor, textColor, icon } = getNotificationStyles();
   
   // Generate a type-specific title
@@ -172,72 +173,76 @@ const RewardNotification: React.FC<RewardNotificationProps> = ({
           transition={{ duration: 0.5 }}
           className="fixed inset-x-0 top-4 mx-auto max-w-md z-50"
         >
-      <div className={`
-        ${backgroundColor} ${borderColor} ${textColor}
-        border-2 rounded-lg shadow-lg overflow-hidden relative
-      `}>
-        {/* Confetti animation */}
-        {renderConfetti()}
-        
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 rounded-full p-1 transition-colors duration-200"
-          aria-label="Close notification"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        
-        <div className="p-4 flex items-start">
-          {/* Notification icon */}
-          <div className="flex-shrink-0 mr-4">
-            {icon}
+          <div className={`
+            ${backgroundColor} ${borderColor} ${textColor}
+            border-2 rounded-lg shadow-lg overflow-hidden relative
+          `}>
+            {/* Confetti animation */}
+            {renderConfetti()}
+            
+            {/* Close button */}
+            <button
+              onClick={handleClose}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 rounded-full p-1 transition-colors duration-200"
+              aria-label="Close notification"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="p-4 flex items-start">
+              {/* Notification icon */}
+              <div className="flex-shrink-0 mr-4">
+                {icon}
+              </div>
+              
+              {/* Notification content */}
+              <div className="flex-1 mt-1">
+                <h3 className="font-bold text-lg mb-1">{getTitle()}</h3>
+                <h4 className="font-semibold mb-1">{notification.name}</h4>
+                <p className="text-sm opacity-90">{notification.description}</p>
+                
+                {/* Earned date */}
+                <p className="text-xs mt-2 opacity-75">
+                  Earned {notification.earnedAt.toLocaleString()}
+                </p>
+              </div>
+            </div>
+            
+            {/* Reward image if available */}
+            {notification.imageUrl && (
+              <div className="px-4 pb-4 flex justify-center">
+                <img 
+                  src={notification.imageUrl} 
+                  alt={notification.name}
+                  className="max-h-32 object-contain rounded shadow"
+                />
+              </div>
+            )}
           </div>
           
-          {/* Notification content */}
-          <div className="flex-1 mt-1">
-            <h3 className="font-bold text-lg mb-1">{getTitle()}</h3>
-            <h4 className="font-semibold mb-1">{notification.name}</h4>
-            <p className="text-sm opacity-90">{notification.description}</p>
-            
-            {/* Earned date */}
-            <p className="text-xs mt-2 opacity-75">
-              Earned {notification.earnedAt.toLocaleString()}
-            </p>
-          </div>
-        </div>
-        
-        {/* Reward image if available */}
-        {notification.imageUrl && (
-          <div className="px-4 pb-4 flex justify-center">
-            <img 
-              src={notification.imageUrl} 
-              alt={notification.name}
-              className="max-h-32 object-contain rounded shadow"
-            />
-          </div>
-        )}
-      </div>
-      
-      {/* CSS for confetti animation */}
-      <style jsx>{`
-        @keyframes confetti {
-          0% {
-            transform: translateY(0) rotate(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(400px) rotate(720deg);
-            opacity: 0;
-          }
-        }
-      `}</style>
-    </div>
+          {/* CSS for confetti animation */}
+          <style>
+            {`
+              @keyframes confetti {
+                0% {
+                  transform: translateY(0) rotate(0);
+                  opacity: 0;
+                }
+                10% {
+                  opacity: 1;
+                }
+                100% {
+                  transform: translateY(400px) rotate(720deg);
+                  opacity: 0;
+                }
+              }
+            `}
+          </style>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
