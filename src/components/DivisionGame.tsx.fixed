@@ -62,15 +62,9 @@ const DivisionGame: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Focus the input field whenever the question changes or when the game starts
   useEffect(() => {
-    if (isGameStarted && inputRef.current) {
-      // Use a small timeout to ensure DOM is ready
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 50);
-    }
-  }, [num1, num2, isGameStarted]);
+    inputRef.current?.focus();
+  }, [num1, num2]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -153,13 +147,11 @@ const DivisionGame: React.FC = () => {
     setNum2(selectedPair.divisor);
     setUserAnswer('');
     
-    // Focus the input field and release the question generation lock
+    // Focus the input field
     setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
+      inputRef.current?.focus();
       setIsGeneratingQuestion(false);
-    }, 150);
+    }, 100);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -266,13 +258,6 @@ const DivisionGame: React.FC = () => {
     } else {
       // Generate the next question
       generateQuestion();
-      
-      // Additional focus attempt after a short delay
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 250);
     }
   };
 
