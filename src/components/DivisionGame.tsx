@@ -45,6 +45,9 @@ const DivisionGame: React.FC = () => {
   const isGeneratingRef = useRef(false);
   // Store the last question info to detect duplicates
   const lastQuestionRef = useRef({ num1: 0, num2: 0 });
+  // Store the last few questions to better prevent repeats
+  const recentQuestionsRef = useRef<Array<{num1: number, num2: number}>>([]);
+  const MAX_RECENT_QUESTIONS = 3; // Remember the last 3 questions to avoid repeats
 
   const { stats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'division');
 
@@ -90,6 +93,8 @@ const DivisionGame: React.FC = () => {
     setIsProcessingAnswer(false);
     isGeneratingRef.current = false;
     lastQuestionRef.current = { num1: 0, num2: 0 };
+    recentQuestionsRef.current = []; // Clear recent questions list
+    console.log('[DivisionGame] Reset recent questions list');
     
     // Generate first question
     generateQuestion();
@@ -240,8 +245,12 @@ const DivisionGame: React.FC = () => {
         const newDividend = selectedPair.dividend;
         const newDivisor = selectedPair.divisor;
         
-        // Check if this is a duplicate of the last question
-        if (newDividend === lastQuestionRef.current.num1 && newDivisor === lastQuestionRef.current.num2) {
+        // Check if this is a duplicate of any recent questions
+        const isDuplicate = recentQuestionsRef.current.some(q => 
+          q.num1 === newDividend && q.num2 === newDivisor
+        );
+        
+        if (isDuplicate) {
           logQuestionState('Generated duplicate question, trying again');
           isGeneratingRef.current = false;
           setTimeout(generateQuestion, 0);
@@ -250,6 +259,14 @@ const DivisionGame: React.FC = () => {
         
         // Update last question reference
         lastQuestionRef.current = { num1: newDividend, num2: newDivisor };
+        
+        // Add to recent questions list and maintain maximum size
+        recentQuestionsRef.current = [
+          { num1: newDividend, num2: newDivisor },
+          ...recentQuestionsRef.current
+        ].slice(0, MAX_RECENT_QUESTIONS);
+        
+        logQuestionState('Updated recent questions:', recentQuestionsRef.current);
         
         setNum1(newDividend);
         setNum2(newDivisor);
@@ -285,8 +302,12 @@ const DivisionGame: React.FC = () => {
     const newDividend = selectedPair.dividend;
     const newDivisor = selectedPair.divisor;
     
-    // Check if this is a duplicate of the last question
-    if (newDividend === lastQuestionRef.current.num1 && newDivisor === lastQuestionRef.current.num2) {
+    // Check if this is a duplicate of any recent questions
+    const isDuplicate = recentQuestionsRef.current.some(q => 
+      q.num1 === newDividend && q.num2 === newDivisor
+    );
+    
+    if (isDuplicate) {
       logQuestionState('Generated duplicate question, trying again');
       isGeneratingRef.current = false;
       setTimeout(generateQuestion, 0);
@@ -295,6 +316,14 @@ const DivisionGame: React.FC = () => {
     
     // Update last question reference
     lastQuestionRef.current = { num1: newDividend, num2: newDivisor };
+    
+    // Add to recent questions list and maintain maximum size
+    recentQuestionsRef.current = [
+      { num1: newDividend, num2: newDivisor },
+      ...recentQuestionsRef.current
+    ].slice(0, MAX_RECENT_QUESTIONS);
+    
+    logQuestionState('Updated recent questions:', recentQuestionsRef.current);
     
     setNum1(newDividend);
     setNum2(newDivisor);
