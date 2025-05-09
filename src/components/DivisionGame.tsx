@@ -1,21 +1,16 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts/UserContext';
-import { Award, BarChart2, LogOut, Users, ArrowLeft, PlayIcon } from 'lucide-react';
+import { ArrowLeft, PlayIcon } from 'lucide-react';
 import { saveGameStats } from '../firebase/utils';
 import { useUserStats } from '../hooks/useUserStats';
 import { StatsModal } from './StatsModal';
 import { gameStyles, gameColors } from '../styles/gameStyles';
-import { useUser } from '../contexts/UserContext';
-import { COIN_REWARDS, TransactionType } from '../types/coinTypes';
+import { COIN_REWARDS } from '../types/coinTypes';
 import { GameDifficulty } from '../types/gameConfig';
 import CoinAnimation from '../components/CoinAnimation';
 
 const TOTAL_QUESTIONS = 20;
-
-const getInitials = (firstName: string = '', lastName: string = '') => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-};
 
 const formatTime = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
@@ -25,7 +20,7 @@ const formatTime = (seconds: number): string => {
 
 const DivisionGame: React.FC = () => {
   const navigate = useNavigate();
-  const { user, setUser, updateCoins } = useContext(UserContext);
+  const { user, updateCoins } = useContext(UserContext);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [num1, setNum1] = useState(0);
   const [num2, setNum2] = useState(0);
@@ -38,18 +33,18 @@ const DivisionGame: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showStats, setShowStats] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const [selectedNumber, setSelectedNumber] = useState<number | undefined>();
   const [difficulty, setDifficulty] = useState<GameDifficulty>('easy');
-  // Track used question pairs to prevent duplicates
   const [usedQuestionPairs, setUsedQuestionPairs] = useState<string[]>([]);
   const [showCoinAnimation, setShowCoinAnimation] = useState(false);
   const [earnedCoins, setEarnedCoins] = useState(0);
   const [coinAnimationType, setCoinAnimationType] = useState<'correct' | 'streak' | 'perfect'>('correct');
   const [currentStreak, setCurrentStreak] = useState(0);
-  // Add a flag to prevent multiple question generations
-  const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+  const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
+  // Track if a new question is already being generated to prevent duplicate generations
+  const isGeneratingRef = useRef(false);
+  // Store the last question info to detect duplicates
+  const lastQuestionRef = useRef({ num1: 0, num2: 0 });
 
   const { stats, loading: statsLoading, error: statsError, refreshStats } = useUserStats(user?.id || '', 'division');
 
@@ -57,49 +52,75 @@ const DivisionGame: React.FC = () => {
     if (!user) {
       navigate('/');
     } else {
-      generateQuestion();
+      // Only initialize the start time here, but don't generate a question
+      // until the user explicitly starts the game
       setStartTime(new Date());
     }
   }, [user, navigate]);
 
   // Focus the input field whenever the question changes or when the game starts
   useEffect(() => {
-    if (isGameStarted && inputRef.current) {
+    if (isGameStarted && inputRef.current && !isProcessingAnswer) {
       // Use a small timeout to ensure DOM is ready
-      setTimeout(() => {
-        inputRef.current?.focus();
+      const focusTimeout = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          console.log('[DivisionGame] Input focused');
+        }
       }, 50);
+      
+      return () => clearTimeout(focusTimeout);
     }
-  }, [num1, num2, isGameStarted]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  }, [num1, num2, isGameStarted, isProcessingAnswer]);
 
   const startGame = () => {
+    console.log('[DivisionGame] Starting new game');
     setIsGameStarted(true);
     setStartTime(new Date());
-    setUsedQuestionPairs([]); // Reset used question pairs when starting new game
+    
+    // Reset all game state
+    setUsedQuestionPairs([]);
+    console.log('[DivisionGame] Reset used question pairs');
+    
+    setQuestionsAnswered(0);
+    setScore(0);
+    setGameHistory([]);
+    setCurrentStreak(0);
+    setTime(0);
+    setIsProcessingAnswer(false);
+    isGeneratingRef.current = false;
+    lastQuestionRef.current = { num1: 0, num2: 0 };
+    
+    // Generate first question
     generateQuestion();
-    if (timerRef.current) clearInterval(timerRef.current);
+    
+    // Start timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      console.log('[DivisionGame] Cleared existing timer');
+    }
+    
     timerRef.current = setInterval(() => {
       setTime(prev => prev + 1);
     }, 1000);
+    console.log('[DivisionGame] Started game timer');
+  };
+
+  // Debug function to log current state
+  const logQuestionState = (message: string, data?: any) => {
+    console.log(`[DivisionGame] ${message}`, data || '');
   };
 
   const generateQuestion = () => {
     // Prevent multiple simultaneous question generations
-    if (isGeneratingQuestion) return;
-    setIsGeneratingQuestion(true);
+    if (isGeneratingRef.current) {
+      logQuestionState('Already generating a question, skipping');
+      return;
+    }
+    
+    isGeneratingRef.current = true;
+    logQuestionState('Generating new question');
+    logQuestionState('Current used pairs:', [...usedQuestionPairs]);
     
     // If a number is selected, use it as the divisor (num2)
     let newNum2 = selectedNumber || Math.floor(Math.random() * 9) + 2;
@@ -122,170 +143,297 @@ const DivisionGame: React.FC = () => {
     
     // Create all possible question pairs for the current divisor
     const allPossiblePairs = [];
+    const allPairs = [];
+    
     for (let answer = 1; answer <= maxAnswer; answer++) {
       const dividend = newNum2 * answer;
       const questionPair = `${dividend}:${newNum2}`;
+      allPairs.push(questionPair);
+      
       if (!usedQuestionPairs.includes(questionPair)) {
         allPossiblePairs.push({ dividend, divisor: newNum2, answer, questionPair });
       }
     }
+    
+    logQuestionState('All possible pairs for divisor ' + newNum2 + ':', allPairs);
+    logQuestionState('Available unused pairs:', allPossiblePairs.map(p => p.questionPair));
 
-    // If no unused pairs are available, reset the used pairs
+    // If no unused pairs are available, try a different divisor or reset
     if (allPossiblePairs.length === 0) {
-      setUsedQuestionPairs([]);
-      // Regenerate the question after resetting
-      setTimeout(() => {
-        setIsGeneratingQuestion(false);
-        generateQuestion();
-      }, 0);
-      return;
+      // If a specific number is selected, we need to reset used pairs
+      if (selectedNumber) {
+        logQuestionState('Resetting used pairs for selected number ' + selectedNumber);
+        setUsedQuestionPairs([]);
+        // Regenerate with same selected number after reset
+        isGeneratingRef.current = false;
+        setTimeout(generateQuestion, 0);
+        return;
+      } else {
+        // Try a different divisor by recursively calling with a forced different number
+        logQuestionState('No available pairs for divisor ' + newNum2 + ', trying a different divisor');
+        // Find a divisor that has unused pairs
+        let foundNewDivisor = false;
+        for (let tryNum = 2; tryNum <= 12; tryNum++) {
+          if (tryNum === newNum2) continue; // Skip the current divisor
+          
+          // Check if this divisor has any unused pairs
+          let hasUnusedPairs = false;
+          for (let ans = 1; ans <= maxAnswer; ans++) {
+            const testPair = `${tryNum * ans}:${tryNum}`;
+            if (!usedQuestionPairs.includes(testPair)) {
+              hasUnusedPairs = true;
+              break;
+            }
+          }
+          
+          if (hasUnusedPairs) {
+            // Use this divisor instead
+            newNum2 = tryNum;
+            foundNewDivisor = true;
+            logQuestionState('Found new divisor with unused pairs:', tryNum);
+            break;
+          }
+        }
+        
+        // If we couldn't find any divisor with unused pairs, reset everything
+        if (!foundNewDivisor) {
+          logQuestionState('No divisors with unused pairs, resetting all used pairs');
+          setUsedQuestionPairs([]);
+          isGeneratingRef.current = false;
+          setTimeout(generateQuestion, 0);
+          return;
+        }
+        
+        // Recalculate possible pairs with the new divisor
+        const newPossiblePairs = [];
+        for (let answer = 1; answer <= maxAnswer; answer++) {
+          const dividend = newNum2 * answer;
+          const questionPair = `${dividend}:${newNum2}`;
+          if (!usedQuestionPairs.includes(questionPair)) {
+            newPossiblePairs.push({ dividend, divisor: newNum2, answer, questionPair });
+          }
+        }
+        
+        if (newPossiblePairs.length === 0) {
+          // This shouldn't happen based on our checks above, but just in case
+          logQuestionState('Still no available pairs after finding new divisor, resetting');
+          setUsedQuestionPairs([]);
+          isGeneratingRef.current = false;
+          setTimeout(generateQuestion, 0);
+          return;
+        }
+        
+        // Use the recalculated pairs
+        const randomIndex = Math.floor(Math.random() * newPossiblePairs.length);
+        const selectedPair = newPossiblePairs[randomIndex];
+        
+        logQuestionState('Selected new pair after divisor change:', selectedPair);
+        
+        // Add the question pair to used pairs
+        setUsedQuestionPairs(prev => {
+          const newUsedPairs = [...prev, selectedPair.questionPair];
+          logQuestionState('Updated used pairs:', newUsedPairs);
+          return newUsedPairs;
+        });
+        
+        // Set the question values
+        const newDividend = selectedPair.dividend;
+        const newDivisor = selectedPair.divisor;
+        
+        // Check if this is a duplicate of the last question
+        if (newDividend === lastQuestionRef.current.num1 && newDivisor === lastQuestionRef.current.num2) {
+          logQuestionState('Generated duplicate question, trying again');
+          isGeneratingRef.current = false;
+          setTimeout(generateQuestion, 0);
+          return;
+        }
+        
+        // Update last question reference
+        lastQuestionRef.current = { num1: newDividend, num2: newDivisor };
+        
+        setNum1(newDividend);
+        setNum2(newDivisor);
+        setUserAnswer('');
+        
+        // Focus the input field
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            logQuestionState('Input focused after new question generation');
+          }
+        }, 150);
+        
+        isGeneratingRef.current = false;
+        return;
+      }
     }
 
     // Select a random pair from available pairs
     const randomIndex = Math.floor(Math.random() * allPossiblePairs.length);
     const selectedPair = allPossiblePairs[randomIndex];
     
-    // Add the question pair to used pairs
-    setUsedQuestionPairs(prev => [...prev, selectedPair.questionPair]);
+    logQuestionState('Selected pair:', selectedPair);
+    
+    // Add the question pair to used pairs - use functional update to ensure we're working with latest state
+    setUsedQuestionPairs(prev => {
+      const newUsedPairs = [...prev, selectedPair.questionPair];
+      logQuestionState('Updated used pairs:', newUsedPairs);
+      return newUsedPairs;
+    });
     
     // Set the question values
-    setNum1(selectedPair.dividend);
-    setNum2(selectedPair.divisor);
+    const newDividend = selectedPair.dividend;
+    const newDivisor = selectedPair.divisor;
+    
+    // Check if this is a duplicate of the last question
+    if (newDividend === lastQuestionRef.current.num1 && newDivisor === lastQuestionRef.current.num2) {
+      logQuestionState('Generated duplicate question, trying again');
+      isGeneratingRef.current = false;
+      setTimeout(generateQuestion, 0);
+      return;
+    }
+    
+    // Update last question reference
+    lastQuestionRef.current = { num1: newDividend, num2: newDivisor };
+    
+    setNum1(newDividend);
+    setNum2(newDivisor);
     setUserAnswer('');
     
-    // Focus the input field and release the question generation lock
+    // Focus the input field
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
+        logQuestionState('Input focused after new question generation');
       }
-      setIsGeneratingQuestion(false);
     }, 150);
+    
+    isGeneratingRef.current = false;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    await handleAnswer();
-  };
-
-  const handleKeyPress = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      await handleAnswer();
+    if (!isProcessingAnswer) {
+      handleAnswer();
     }
   };
 
-  const handleAnswer = async () => {
-    if (!userAnswer || isGeneratingQuestion) return;
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isProcessingAnswer) {
+      e.preventDefault();
+      handleAnswer();
+    }
+  };
+
+  const handleAnswer = () => {
+    // Prevent processing if already processing or no answer
+    if (isProcessingAnswer || !userAnswer) return;
+    
+    // Set processing flag to disable UI
+    setIsProcessingAnswer(true);
+    console.log('[DivisionGame] Processing answer, UI disabled');
 
     if (!isGameStarted) {
       setIsGameStarted(true);
     }
 
-    // Set flag to prevent multiple question generations
-    setIsGeneratingQuestion(true);
-
     const correctAnswer = num1 / num2;
     const isCorrect = parseFloat(userAnswer) === correctAnswer;
     
-    // Add to history before any animations or state changes
+    // Add to history
     const historyEntry = `${num1} ÷ ${num2} = ${userAnswer} (${isCorrect ? 'Correct' : 'Incorrect, answer was ' + correctAnswer})`;
     setGameHistory(prev => [...prev, historyEntry]);
+    console.log('[DivisionGame] Added to history:', historyEntry);
     
-    // Increment questions answered counter
-    setQuestionsAnswered(prev => prev + 1);
-    
-    // Check if this was the last question
-    const isLastQuestion = questionsAnswered + 1 >= TOTAL_QUESTIONS;
-    
+    // Update score and streak
     if (isCorrect) {
-      // Update score and streak
       setScore(prev => prev + 1);
-      const newStreak = currentStreak + 1;
-      setCurrentStreak(newStreak);
+      setCurrentStreak(prev => prev + 1);
       
-      // Base reward for correct answer
-      let totalReward = COIN_REWARDS.CORRECT_ANSWER;
-      let animationType: 'correct' | 'streak' | 'perfect' = 'correct';
-      let transactionType: TransactionType = 'CORRECT_ANSWER';
-      
-      // First reset any existing animation
-      setShowCoinAnimation(false);
-      
-      if (newStreak === 10) {
-        totalReward += COIN_REWARDS.STREAK_BONUS;
-        animationType = 'streak';
-        transactionType = 'STREAK_BONUS';
-        await updateCoins(
-          COIN_REWARDS.STREAK_BONUS,
-          transactionType,
-          '10 correct answers in a row bonus'
-        );
-      }
-      
-      if (isLastQuestion && score + 1 === TOTAL_QUESTIONS) {
-        totalReward += COIN_REWARDS.PERFECT_GAME;
-        animationType = 'perfect';
-        transactionType = 'PERFECT_GAME';
-        await updateCoins(
-          COIN_REWARDS.PERFECT_GAME,
-          transactionType,
-          'Perfect game bonus'
-        );
-      }
-      
-      // Update base coins
-      await updateCoins(
-        COIN_REWARDS.CORRECT_ANSWER,
-        'CORRECT_ANSWER',
-        'Correct answer reward'
-      );
-      
-      // Show animation
-      setEarnedCoins(totalReward);
-      setCoinAnimationType(animationType);
+      // Show coin animation
+      setEarnedCoins(COIN_REWARDS.CORRECT_ANSWER);
+      setCoinAnimationType('correct');
       setShowCoinAnimation(true);
+      console.log('[DivisionGame] Correct answer, showing coin animation');
       
-      // Wait for animation to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setShowCoinAnimation(false);
-      
-      // Wait for animation to completely fade out
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Add coins with all required parameters
+      try {
+        // Use the correct transaction type and description
+        updateCoins(COIN_REWARDS.CORRECT_ANSWER, 'REWARD', 'Correct division answer');
+      } catch (error) {
+        console.error('Error updating coins:', error);
+      }
     } else {
       setCurrentStreak(0);
-      // Small delay for incorrect answers too
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('[DivisionGame] Incorrect answer');
     }
     
-    // Clear the user answer
+    // Store current question before incrementing counter
+    const currentQuestionPair = `${num1}:${num2}`;
+    console.log('[DivisionGame] Current question pair:', currentQuestionPair);
+    
+    // Increment questions counter - use functional update to ensure latest value
+    setQuestionsAnswered(prev => {
+      const newCount = prev + 1;
+      console.log('[DivisionGame] Questions answered:', newCount);
+      return newCount;
+    });
+    
+    // Clear user answer
     setUserAnswer('');
     
-    // Handle game end or generate next question
-    if (isLastQuestion) {
-      await handleGameEnd();
-    } else {
-      // Generate the next question
-      generateQuestion();
+    // Use a completely different approach with a single animation timeout
+    // This ensures we only generate one question per answer
+    const animationTimeout = setTimeout(() => {
+      // Hide coin animation
+      setShowCoinAnimation(false);
+      console.log('[DivisionGame] Animation hidden');
       
-      // Additional focus attempt after a short delay
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 250);
-    }
+      // Check if game is over - use local variable instead of state
+      // to avoid race conditions
+      const nextQuestionNumber = questionsAnswered + 1;
+      if (nextQuestionNumber >= TOTAL_QUESTIONS) {
+        console.log('[DivisionGame] Game complete, ending game');
+        handleGameEnd();
+      } else {
+        // Need a separate timeout for generating the next question
+        // to ensure all UI updates are complete first
+        console.log('[DivisionGame] Will generate next question in 300ms');
+        const nextQuestionTimeout = setTimeout(() => {
+          console.log('[DivisionGame] Now generating next question');
+          // Generate next question
+          generateQuestion();
+          
+          // Only release the processing lock after the question is fully generated
+          // with a small delay to ensure UI stability
+          setTimeout(() => {
+            setIsProcessingAnswer(false);
+            console.log('[DivisionGame] Processing complete, UI enabled');
+          }, 100);
+        }, 300);
+        
+        return () => clearTimeout(nextQuestionTimeout);
+      }
+    }, 1000);
+    
+    // Cleanup function in case component unmounts
+    return () => clearTimeout(animationTimeout);
   };
 
-  const handleGameEnd = async () => {
+  const handleGameEnd = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+
+    // Make sure processing flag is set to prevent any further interactions
+    setIsProcessingAnswer(true);
 
     const endTime = new Date();
     const gameTime = (endTime.getTime() - startTime.getTime()) / 1000;
 
     try {
-      await saveGameStats(user?.id || '', {
+      saveGameStats(user?.id || '', {
         gameType: 'division',
         score,
         totalQuestions: TOTAL_QUESTIONS,
@@ -294,7 +442,7 @@ const DivisionGame: React.FC = () => {
       });
 
       // Refresh stats after saving
-      await refreshStats();
+      refreshStats();
       
       // Navigate to proof screen
       navigate('/proof', { 
@@ -311,11 +459,11 @@ const DivisionGame: React.FC = () => {
 
     } catch (error) {
       console.error('Error saving game stats:', error);
+      // Even if there's an error, make sure we reset the game
+      setIsGameStarted(false);
+      setTime(0);
+      setIsProcessingAnswer(false);
     }
-
-    setIsGameStarted(false);
-    setTime(0);
-    setIsGeneratingQuestion(false);
   };
 
   return (
@@ -325,7 +473,10 @@ const DivisionGame: React.FC = () => {
         <CoinAnimation 
           amount={earnedCoins}
           type={coinAnimationType}
-          onComplete={() => setShowCoinAnimation(false)}
+          onComplete={() => {
+            // Animation complete callback
+            // We handle hiding in the main flow to avoid race conditions
+          }}
         />
       )}
       <div className={gameStyles.innerContainer}>
@@ -357,7 +508,6 @@ const DivisionGame: React.FC = () => {
                     <div className={gameStyles.gameContent.wrapper}>
                       {!isGameStarted ? (
                         <div className={gameStyles.gameContent.startScreen.wrapper}>
-                          {/* Removed duplicate game logo since we already have it at the top */}
                           {/* Number Selection */}
                           <div className="mb-6">
                             <label className="block text-gray-700 text-sm font-bold mb-2 text-center">
@@ -455,8 +605,6 @@ const DivisionGame: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Removed duplicate game logo since we already have it at the top */}
-
                           <div className="text-3xl sm:text-4xl font-bold text-center mb-4 sm:mb-6 text-gray-700">
                             {num1} ÷ {num2} = ?
                           </div>
@@ -470,18 +618,19 @@ const DivisionGame: React.FC = () => {
                               placeholder="Your answer"
                               ref={inputRef}
                               onKeyPress={handleKeyPress}
-                              disabled={isGeneratingQuestion}
+                              disabled={isProcessingAnswer}
+                              autoComplete="off"
                             />
                             <button
                               type="submit"
                               className={`w-full py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200 ${
-                                isGeneratingQuestion 
+                                isProcessingAnswer 
                                   ? 'bg-gray-400 cursor-not-allowed' 
                                   : 'bg-orange-600/70 hover:bg-orange-700/80 text-white backdrop-blur'
                               }`}
-                              disabled={isGeneratingQuestion}
+                              disabled={isProcessingAnswer}
                             >
-                              {isGeneratingQuestion ? 'Processing...' : 'Submit Answer'}
+                              {isProcessingAnswer ? 'Processing...' : 'Submit Answer'}
                             </button>
                           </form>
 
